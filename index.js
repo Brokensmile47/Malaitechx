@@ -1,6 +1,6 @@
 /**
  * Malai XD - A WhatsApp Bot
- * Copyright (c) 2024 Professor
+ * Copyright (c) 2026 Kimani Samuel
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the MIT License.
@@ -219,7 +219,7 @@ async function startXeonBotInc() {
         if (!!global.phoneNumber) {
             phoneNumber = global.phoneNumber
         } else {
-            phoneNumber = await question(chalk.bgBlack(chalk.greenBright(`Please type your WhatsApp number 🦈\nFormat: 6281376552730 (without + or spaces) : `)))
+            phoneNumber = await question(chalk.bgBlack(chalk.greenBright(`Please type your WhatsApp number 🦈\nFormat: 254105197055 (without + or spaces) : `)))
         }
 
         // Clean the phone number - remove any non-digit characters
