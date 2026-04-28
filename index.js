@@ -211,108 +211,127 @@ async function startXeonBotInc() {
 
     XeonBotInc.serializeM = (m) => smsg(XeonBotInc, m, store)
 
-    // Handle pairing code
-    if (pairingCode && !XeonBotInc.authState.creds.registered) {
-        if (useMobile) throw new Error('Cannot use pairing code with mobile api')
+    // Handle pairing code (FIXED - no timeout)
+let pairingNumber = null
 
-        let phoneNumber
-        if (!!global.phoneNumber) {
-            phoneNumber = global.phoneNumber
-        } else {
-            phoneNumber = await question(chalk.bgBlack(chalk.greenBright(`Please type your WhatsApp number 🦈\nFormat: 254105197055 (without + or spaces) : `)))
-        }
+if (pairingCode && !XeonBotInc.authState.creds.registered) {
+    if (useMobile) throw new Error('Cannot use pairing code with mobile api')
 
-        // Clean the phone number - remove any non-digit characters
-        phoneNumber = phoneNumber.replace(/[^0-9]/g, '')
-
-        // Validate the phone number using awesome-phonenumber
-        const pn = require('awesome-phonenumber');
-        if (!pn('+' + phoneNumber).isValid()) {
-            console.log(chalk.red('Invalid phone number. Please enter your full international number (e.g., 15551234567 for US, 447911123456 for UK, etc.) without + or spaces.'));
-            process.exit(1);
-        }
-
-        setTimeout(async () => {
-            try {
-                let code = await XeonBotInc.requestPairingCode(phoneNumber)
-                code = code?.match(/.{1,4}/g)?.join("-") || code
-                console.log(chalk.black(chalk.bgGreen(`Your Pairing Code : `)), chalk.black(chalk.white(code)))
-                console.log(chalk.yellow(`\nPlease enter this code in your WhatsApp app:\n1. Open WhatsApp\n2. Go to Settings > Linked Devices\n3. Tap "Link a Device"\n4. Enter the code shown above`))
-            } catch (error) {
-                console.error('Error requesting pairing code:', error)
-                console.log(chalk.red('Failed to get pairing code. Please check your phone number and try again.'))
-            }
-        }, 3000)
+    if (!!global.phoneNumber) {
+        pairingNumber = global.phoneNumber
+    } else {
+        pairingNumber = await question(chalk.bgBlack(chalk.greenBright(
+            `Please type your WhatsApp number 🦈\nFormat: 254105197055 (without + or spaces) : `
+        )))
     }
 
-    // Connection handling
-    XeonBotInc.ev.on('connection.update', async (s) => {
-        const { connection, lastDisconnect, qr } = s
-        
-        if (qr) {
-            console.log(chalk.yellow('📱 QR Code generated. Please scan with WhatsApp.'))
-        }
-        
-        if (connection === 'connecting') {
-            console.log(chalk.yellow('🔄 Connecting to WhatsApp...'))
-        }
-        
-        if (connection == "open") {
-            console.log(chalk.magenta(` `))
-            console.log(chalk.yellow(`🌿Connected to => ` + JSON.stringify(XeonBotInc.user, null, 2)))
+    // Clean number
+    pairingNumber = pairingNumber.replace(/[^0-9]/g, '')
 
-            try {
-                const botNumber = XeonBotInc.user.id.split(':')[0] + '@s.whatsapp.net';
-                await XeonBotInc.sendMessage(botNumber, {
-                    text: `🤖 Bot Connected Successfully!\n\n⏰ Time: ${new Date().toLocaleString()}\n✅ Status: Online and Ready!\n\n✅Make sure to join below channel`,
-                    contextInfo: {
-                        forwardingScore: 1,
-                        isForwarded: true,
-                        forwardedNewsletterMessageInfo: {
-                            newsletterJid: '120363161513685998@newsletter',
-                            newsletterName: 'Malai XD',
-                            serverMessageId: -1
-                        }
+    // Validate
+    const pn = require('awesome-phonenumber')
+    if (!pn('+' + pairingNumber).isValid()) {
+        console.log(chalk.red('Invalid phone number. Please enter correct format.'))
+        process.exit(1)
+    }
+
+    // Save globally for use later
+    global.pairingNumber = pairingNumber
+}
+
+
+// Connection handling
+XeonBotInc.ev.on('connection.update', async (s) => {
+    const { connection, lastDisconnect, qr } = s
+    
+    if (qr) {
+        console.log(chalk.yellow('📱 QR Code generated. Please scan with WhatsApp.'))
+    }
+    
+    if (connection === 'connecting') {
+        console.log(chalk.yellow('🔄 Connecting to WhatsApp...'))
+    }
+    
+    if (connection === "open") {
+        console.log(chalk.magenta(` `))
+        console.log(chalk.yellow(`🌿Connected to => ` + JSON.stringify(XeonBotInc.user, null, 2)))
+
+        // 🔑 FIXED PAIRING HERE
+        try {
+            if (pairingCode && !XeonBotInc.authState.creds.registered && global.pairingNumber) {
+                let code = await XeonBotInc.requestPairingCode(global.pairingNumber)
+                code = code?.match(/.{1,4}/g)?.join("-") || code
+
+                console.log(chalk.black(chalk.bgGreen("Your Pairing Code : ")), chalk.black(chalk.white(code)))
+                console.log(chalk.yellow(`
+Please enter this code in your WhatsApp app:
+1. Open WhatsApp
+2. Go to Settings > Linked Devices
+3. Tap "Link a Device"
+4. Enter the code above
+                `))
+            }
+        } catch (error) {
+            console.error('Error requesting pairing code:', error)
+        }
+
+        try {
+            const botNumber = XeonBotInc.user.id.split(':')[0] + '@s.whatsapp.net';
+            await XeonBotInc.sendMessage(botNumber, {
+                text: `🤖 Bot Connected Successfully!
+
+⏰ Time: ${new Date().toLocaleString()}
+✅ Status: Online and Ready!
+
+✅ Make sure to join below channel`,
+                contextInfo: {
+                    forwardingScore: 1,
+                    isForwarded: true,
+                    forwardedNewsletterMessageInfo: {
+                        newsletterJid: '120363161513685998@newsletter',
+                        newsletterName: 'Malai XD 🦈',
+                        serverMessageId: -1
                     }
-                });
-            } catch (error) {
-                console.error('Error sending connection message:', error.message)
-            }
+                }
+            });
+        } catch (error) {
+            console.error('Error sending connection message:', error.message)
+        }
 
-            await delay(1999)
-            console.log(chalk.yellow(`\n\n                  ${chalk.bold.blue(`[ ${global.botname || 'MALAI XD'} ]`)}\n\n`))
-            console.log(chalk.cyan(`< ================================================== >`))
-            console.log(chalk.magenta(`\n${global.themeemoji || '•'} YT CHANNEL: N/A`))
-            console.log(chalk.magenta(`${global.themeemoji || '•'} GITHUB: Brokensmile47`))
-            console.log(chalk.magenta(`${global.themeemoji || '•'} WA NUMBER: ${owner}`))
-            console.log(chalk.magenta(`${global.themeemoji || '•'} CREDIT: Kimani Samuel`))
-            console.log(chalk.green(`${global.themeemoji || '•'} 🤖 Bot Connected Successfully! ✅`))
-            console.log(chalk.blue(`Bot Version: ${settings.version}`))
+        await delay(1999)
+        console.log(chalk.yellow(`\n\n                  ${chalk.bold.blue(`[ ${global.botname || 'MALAI XD'} ]`)}\n\n`))
+        console.log(chalk.cyan(`< ================================================== >`))
+        console.log(chalk.magenta(`\n${global.themeemoji || '•'} YT CHANNEL: N/A`))
+        console.log(chalk.magenta(`${global.themeemoji || '•'} GITHUB: Brokensmile47`))
+        console.log(chalk.magenta(`${global.themeemoji || '•'} WA NUMBER: ${owner}`))
+        console.log(chalk.magenta(`${global.themeemoji || '•'} CREDIT: Kimani Samuel`))
+        console.log(chalk.green(`${global.themeemoji || '•'} 🤖 Bot Connected Successfully! ✅`))
+        console.log(chalk.blue(`Bot Version: ${settings.version}`))
+    }
+    
+    if (connection === 'close') {
+        const shouldReconnect = (lastDisconnect?.error)?.output?.statusCode !== DisconnectReason.loggedOut
+        const statusCode = lastDisconnect?.error?.output?.statusCode
+        
+        console.log(chalk.red(`Connection closed due to ${lastDisconnect?.error}, reconnecting ${shouldReconnect}`))
+        
+        if (statusCode === DisconnectReason.loggedOut || statusCode === 401) {
+            try {
+                rmSync('./session', { recursive: true, force: true })
+                console.log(chalk.yellow('Session folder deleted. Please re-authenticate.'))
+            } catch (error) {
+                console.error('Error deleting session:', error)
+            }
+            console.log(chalk.red('Session logged out. Please re-authenticate.'))
         }
         
-        if (connection === 'close') {
-            const shouldReconnect = (lastDisconnect?.error)?.output?.statusCode !== DisconnectReason.loggedOut
-            const statusCode = lastDisconnect?.error?.output?.statusCode
-            
-            console.log(chalk.red(`Connection closed due to ${lastDisconnect?.error}, reconnecting ${shouldReconnect}`))
-            
-            if (statusCode === DisconnectReason.loggedOut || statusCode === 401) {
-                try {
-                    rmSync('./session', { recursive: true, force: true })
-                    console.log(chalk.yellow('Session folder deleted. Please re-authenticate.'))
-                } catch (error) {
-                    console.error('Error deleting session:', error)
-                }
-                console.log(chalk.red('Session logged out. Please re-authenticate.'))
-            }
-            
-            if (shouldReconnect) {
-                console.log(chalk.yellow('Reconnecting...'))
-                await delay(5000)
-                startXeonBotInc()
-            }
+        if (shouldReconnect) {
+            console.log(chalk.yellow('Reconnecting...'))
+            await delay(5000)
+            startXeonBotInc()
         }
-    })
+    }
+})
 
     // Track recently-notified callers to avoid spamming messages
     const antiCallNotified = new Set();
