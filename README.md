@@ -39,7 +39,7 @@ node index.js
 
 To connect using whatsapp pairing site is:
 
-https://malai-pairing-site-0e06.onrender.com/
+[Malai Pairing Site](https://malai-pairing-site-0e06.onrender.com/)
 
 Put The File Received on Whatapp on the session folder
 Edit your owner details inside config file:
