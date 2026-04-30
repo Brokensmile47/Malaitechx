@@ -25,6 +25,9 @@ setInterval(() => {
     console.log('🧹 Temp folder auto-cleaned');
 }, 3 * 60 * 60 * 1000);
 
+// ⭐ ADD THIS HELPER FUNCTION
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
 const settings = require('./settings');
 require('./config.js');
 const { isBanned } = require('./lib/isBanned');
@@ -189,6 +192,13 @@ async function handleMessages(sock, messageUpdate, printLog) {
         const isGroup = chatId.endsWith('@g.us');
         const senderIsSudo = await isSudo(senderId);
         const senderIsOwnerOrSudo = await isOwnerOrSudo(senderId, sock, chatId);
+
+        // ⭐ FIX: Add presence update to show bot is active
+        if (!message.key.fromMe) {
+            try {
+                await sock.sendPresenceUpdate('available', chatId);
+            } catch (e) { }
+        }
 
         // Handle button responses
         if (message.message?.buttonsResponseMessage) {
@@ -669,11 +679,21 @@ async function handleMessages(sock, messageUpdate, printLog) {
                 const mentionedJidListDemote = message.message.extendedTextMessage?.contextInfo?.mentionedJid || [];
                 await demoteCommand(sock, chatId, mentionedJidListDemote, message);
                 break;
-            case userMessage === '.ping':
+            case userMessage === '.ping': {
+                // ⭐ FIX: Add human-like delay and typing indicator
+                await sock.sendPresenceUpdate('composing', chatId);
+                await delay(800 + Math.random() * 1200);  // 0.8-2 second delay
                 await pingCommand(sock, chatId, message);
+                await sock.sendPresenceUpdate('paused', chatId);
+                commandExecuted = true;
                 break;
+            }
             case userMessage === '.alive':
+                // ⭐ FIX: Add delay for .alive too
+                await sock.sendPresenceUpdate('composing', chatId);
+                await delay(600 + Math.random() * 1000);
                 await aliveCommand(sock, chatId, message);
+                await sock.sendPresenceUpdate('paused', chatId);
                 break;
             case userMessage.startsWith('.mention '):
                 {
@@ -830,9 +850,6 @@ async function handleMessages(sock, messageUpdate, printLog) {
             case userMessage.startsWith('.autostatus'):
                 const autoStatusArgs = userMessage.split(' ').slice(1);
                 await autoStatusCommand(sock, chatId, message, autoStatusArgs);
-                break;
-            case userMessage.startsWith('.simp'):
-                await simpCommand(sock, chatId, message);
                 break;
             case userMessage.startsWith('.metallic'):
                 await textmakerCommand(sock, chatId, message, userMessage, 'metallic');
