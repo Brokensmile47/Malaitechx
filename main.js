@@ -149,7 +149,8 @@ const soraCommand = require('./commands/sora');
 // Global settings
 global.packname = settings.packname;
 global.author = settings.author;
-✨ Made by Kimani Samuel 💎
+// ✨ Made by Kimani Samuel 💎
+// 📢 Follow: https://www.whatsapp.com/channel/0029Vb7yILLBadmWeKQso40p
 ✨ Made by Kimani Samuel 💎
 📢 Follow my WhatsApp Channel: https://www.whatsapp.com/channel/0029Vb7yILLBadmWeKQso40p
 global.ytch = "N/A";
