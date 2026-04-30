@@ -151,7 +151,6 @@ global.packname = settings.packname;
 global.author = settings.author;
 // ✨ Made by Kimani Samuel 💎
 // 📢 Follow: https://www.whatsapp.com/channel/0029Vb7yILLBadmWeKQso40p
-📢 Follow my WhatsApp Channel: https://www.whatsapp.com/channel/0029Vb7yILLBadmWeKQso40p
 global.ytch = "N/A";
 
 // Add this near the top of main.js with other global configurations
