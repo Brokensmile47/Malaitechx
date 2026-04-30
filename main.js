@@ -209,7 +209,7 @@ async function handleMessages(sock, messageUpdate, printLog) {
             if (buttonId === 'channel') {
                 await sock.sendMessage(chatId, {
 // ✨ Made by Kimani Samuel 💎
-📢 Follow my WhatsApp Channel: https://www.whatsapp.com/channel/0029Vb7yILLBadmWeKQso40p
+// 📢 Follow my WhatsApp Channel: https://www.whatsapp.com/channel/0029Vb7yILLBadmWeKQso40p
                 }, { quoted: message });
                 return;
             } else if (buttonId === 'owner') {
