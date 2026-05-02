@@ -1,3 +1,5 @@
 {
-  "enabled": false
+  "enabled": false,
+  "duration": 20000,
+  "loop": false
 }
