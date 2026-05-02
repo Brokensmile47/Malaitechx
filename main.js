@@ -66,7 +66,7 @@ const helpCommand = require('./commands/help');
 // ⭐ FIX: Add presence update to show bot is active
 if (!message.key.fromMe) {
     try {
-        await sock.sendPresenceUpdate('available', chatId);
+        await handleAutorecord(sock, chatId);
     } catch (e) { }
 }
 
