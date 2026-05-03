@@ -36,8 +36,8 @@ async function stickerCommand(sock, chatId, message) {
                 forwardingScore: 999,
                 isForwarded: true,
                 forwardedNewsletterMessageInfo: {
-                    newsletterJid: '120363161513685998@newsletter',
-                    newsletterName: 'Malai XD',
+                    newsletterJid: '0029Vb7yILLBadmWeKQso40p@newsletter',
+                    newsletterName: '✨ Made By Kɪᴍᴀɴɪ Samuel 💎',
                     serverMessageId: -1
                 }
             }
@@ -58,8 +58,8 @@ async function stickerCommand(sock, chatId, message) {
                     forwardingScore: 999,
                     isForwarded: true,
                     forwardedNewsletterMessageInfo: {
-                        newsletterJid: '120363161513685998@newsletter',
-                        newsletterName: 'Malai XD',
+                        newsletterJid: '0029Vb7yILLBadmWeKQso40p@newsletter',
+                        newsletterName: '✨ Made By Kɪᴍᴀɴɪ Samuel 💎',
                         serverMessageId: -1
                     }
                 }
@@ -151,7 +151,7 @@ async function stickerCommand(sock, chatId, message) {
         // Create metadata
         const json = {
             'sticker-pack-id': crypto.randomBytes(32).toString('hex'),
-            'sticker-pack-name': settings.packname || 'Malai XD',
+            'sticker-pack-name': settings.packname || '✨ Made By Kɪᴍᴀɴɪ Samuel 💎',
             'emojis': ['🤖']
         };
 
@@ -181,7 +181,7 @@ async function stickerCommand(sock, chatId, message) {
                     await img2.load(smallWebp);
                     const json2 = {
                         'sticker-pack-id': crypto.randomBytes(32).toString('hex'),
-                        'sticker-pack-name': settings.packname || 'Malai XD',
+                        'sticker-pack-name': settings.packname || '✨ Made By Kɪᴍᴀɴɪ Samuel 💎',
                         'emojis': ['🤖']
                     };
                     const exifAttr2 = Buffer.from([0x49, 0x49, 0x2A, 0x00, 0x08, 0x00, 0x00, 0x00, 0x01, 0x00, 0x41, 0x57, 0x07, 0x00, 0x00, 0x00, 0x00, 0x00, 0x16, 0x00, 0x00, 0x00]);
@@ -216,8 +216,8 @@ async function stickerCommand(sock, chatId, message) {
                 forwardingScore: 999,
                 isForwarded: true,
                 forwardedNewsletterMessageInfo: {
-                    newsletterJid: '120363161513685998@newsletter',
-                    newsletterName: 'Malai XD',
+                    newsletterJid: '0029Vb7yILLBadmWeKQso40p@newsletter',
+                    newsletterName: '✨ Made By Kɪᴍᴀɴɪ Samuel 💎',
                     serverMessageId: -1
                 }
             }

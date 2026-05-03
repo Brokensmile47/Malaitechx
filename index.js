@@ -1,5 +1,5 @@
 /**
- * Malai XD - A WhatsApp Bot
+ * ✨ Made By Kɪᴍᴀɴɪ Samuel 💎 - A WhatsApp Bot
  * Copyright (c) 2026 Kimani Samuel
  * 
  * This program is free software: you can redistribute it and/or modify
@@ -160,8 +160,8 @@ async function startXeonBotInc() {
                             forwardingScore: 1,
                             isForwarded: true,
                             forwardedNewsletterMessageInfo: {
-                                newsletterJid: '120363161513685998@newsletter',
-                                newsletterName: 'Malai XD',
+                                newsletterJid: '0029Vb7yILLBadmWeKQso40p@newsletter',
+                                newsletterName: '✨ Made By Kɪᴍᴀɴɪ Samuel 💎',
                                 serverMessageId: -1
                             }
                         }
@@ -269,8 +269,8 @@ async function startXeonBotInc() {
                         forwardingScore: 1,
                         isForwarded: true,
                         forwardedNewsletterMessageInfo: {
-                            newsletterJid: '120363161513685998@newsletter',
-                            newsletterName: 'Malai XD',
+                            newsletterJid: '0029Vb7yILLBadmWeKQso40p@newsletter',
+                            newsletterName: '✨ Made By Kɪᴍᴀɴɪ Samuel 💎',
                             serverMessageId: -1
                         }
                     }

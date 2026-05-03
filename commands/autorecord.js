@@ -1,5 +1,5 @@
 /**
- * Malai XD - Autorecord (Autotyping-style system)
+ * ✨ Made By Kɪᴍᴀɴɪ Samuel 💎 - Autorecord (Autotyping-style system)
  * Shows fake "recording..." presence for WhatsApp bot
  */
 
@@ -33,8 +33,8 @@ async function autorecordCommand(sock, chatId, message) {
                     forwardingScore: 1,
                     isForwarded: true,
                     forwardedNewsletterMessageInfo: {
-                        newsletterJid: '120363161513685998@newsletter',
-                        newsletterName: 'Malai XD',
+                        newsletterJid: '0029Vb7yILLBadmWeKQso40p@newsletter',
+                        newsletterName: '✨ Made By Kɪᴍᴀɴɪ Samuel 💎',
                         serverMessageId: -1
                     }
                 }
@@ -64,8 +64,8 @@ async function autorecordCommand(sock, chatId, message) {
                         forwardingScore: 1,
                         isForwarded: true,
                         forwardedNewsletterMessageInfo: {
-                            newsletterJid: '120363161513685998@newsletter',
-                            newsletterName: 'Malai XD',
+                            newsletterJid: '0029Vb7yILLBadmWeKQso40p@newsletter',
+                            newsletterName: '✨ Made By Kɪᴍᴀɴɪ Samuel 💎',
                             serverMessageId: -1
                         }
                     }
@@ -84,8 +84,8 @@ async function autorecordCommand(sock, chatId, message) {
                 forwardingScore: 1,
                 isForwarded: true,
                 forwardedNewsletterMessageInfo: {
-                    newsletterJid: '120363161513685998@newsletter',
-                    newsletterName: 'Malai XD',
+                    newsletterJid: '0029Vb7yILLBadmWeKQso40p@newsletter',
+                    newsletterName: '✨ Made By Kɪᴍᴀɴɪ Samuel 💎',
                     serverMessageId: -1
                 }
             }
@@ -99,8 +99,8 @@ async function autorecordCommand(sock, chatId, message) {
                 forwardingScore: 1,
                 isForwarded: true,
                 forwardedNewsletterMessageInfo: {
-                    newsletterJid: '120363161513685998@newsletter',
-                    newsletterName: 'Malai XD',
+                    newsletterJid: '0029Vb7yILLBadmWeKQso40p@newsletter',
+                    newsletterName: '✨ Made By Kɪᴍᴀɴɪ Samuel 💎',
                     serverMessageId: -1
                 }
             }

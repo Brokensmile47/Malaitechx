@@ -5,7 +5,7 @@ const path = require('path');
 async function helpCommand(sock, chatId, message) {
     const helpMessage = `
 ╔═══════════════════╗
-   *🤖 ${settings.botName || 'Malai XD'}*  
+   *🤖 ${settings.botName || '✨ Made By Kɪᴍᴀɴɪ Samuel 💎'}*  
    Version: *${settings.version || '3.0.0'}*
    by ${settings.botOwner || 'Kimani Samuel'}
    YT : ${global.ytch}
@@ -237,8 +237,8 @@ Join our channel for updates:`;
                     forwardingScore: 1,
                     isForwarded: true,
                     forwardedNewsletterMessageInfo: {
-                        newsletterJid: '120363161513685998@newsletter',
-                        newsletterName: 'Malai XD',
+                        newsletterJid: '0029Vb7yILLBadmWeKQso40p@newsletter',
+                        newsletterName: '✨ Made By Kɪᴍᴀɴɪ Samuel 💎',
                         serverMessageId: -1
                     }
                 }
@@ -251,8 +251,8 @@ Join our channel for updates:`;
                     forwardingScore: 1,
                     isForwarded: true,
                     forwardedNewsletterMessageInfo: {
-                        newsletterJid: '120363161513685998@newsletter',
-                        newsletterName: 'Malai XD By Kimani Samuel',
+                        newsletterJid: '0029Vb7yILLBadmWeKQso40p@newsletter',
+                        newsletterName: '✨ Made By Kɪᴍᴀɴɪ Samuel 💎 By Kimani Samuel',
                         serverMessageId: -1
                     } 
                 }

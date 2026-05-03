@@ -1,5 +1,5 @@
 /**
- * Malai XD - A WhatsApp Bot
+ * ✨ Made By Kɪᴍᴀɴɪ Samuel 💎 - A WhatsApp Bot
  * Autotyping Command - Shows fake typing status
  */
 
@@ -31,8 +31,8 @@ async function autotypingCommand(sock, chatId, message) {
                     forwardingScore: 1,
                     isForwarded: true,
                     forwardedNewsletterMessageInfo: {
-                        newsletterJid: '120363161513685998@newsletter',
-                        newsletterName: 'Malai XD',
+                        newsletterJid: '0029Vb7yILLBadmWeKQso40p@newsletter',
+                        newsletterName: '✨ Made By Kɪᴍᴀɴɪ Samuel 💎',
                         serverMessageId: -1
                     }
                 }
@@ -62,8 +62,8 @@ async function autotypingCommand(sock, chatId, message) {
                         forwardingScore: 1,
                         isForwarded: true,
                         forwardedNewsletterMessageInfo: {
-                            newsletterJid: '120363161513685998@newsletter',
-                            newsletterName: 'Malai XD',
+                            newsletterJid: '0029Vb7yILLBadmWeKQso40p@newsletter',
+                            newsletterName: '✨ Made By Kɪᴍᴀɴɪ Samuel 💎',
                             serverMessageId: -1
                         }
                     }
@@ -85,8 +85,8 @@ async function autotypingCommand(sock, chatId, message) {
                 forwardingScore: 1,
                 isForwarded: true,
                 forwardedNewsletterMessageInfo: {
-                    newsletterJid: '120363161513685998@newsletter',
-                    newsletterName: 'Malai XD',
+                    newsletterJid: '0029Vb7yILLBadmWeKQso40p@newsletter',
+                    newsletterName: '✨ Made By Kɪᴍᴀɴɪ Samuel 💎',
                     serverMessageId: -1
                 }
             }
@@ -100,8 +100,8 @@ async function autotypingCommand(sock, chatId, message) {
                 forwardingScore: 1,
                 isForwarded: true,
                 forwardedNewsletterMessageInfo: {
-                    newsletterJid: '120363161513685998@newsletter',
-                    newsletterName: 'Malai XD',
+                    newsletterJid: '0029Vb7yILLBadmWeKQso40p@newsletter',
+                    newsletterName: '✨ Made By Kɪᴍᴀɴɪ Samuel 💎',
                     serverMessageId: -1
                 }
             }
