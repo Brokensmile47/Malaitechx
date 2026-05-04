@@ -385,8 +385,8 @@ async function handleMessages(sock, messageUpdate, printLog) {
         // We'll show typing indicator after command execution if needed
         let commandExecuted = false;
 
-        // React with starting emoji before command runs
-        await reactStart(sock, message, userMessage);
+        // Fire reaction in background — does NOT slow down command execution
+        reactStart(sock, message, userMessage).catch(() => {});
 
         switch (true) {
             case userMessage === '.simage': {
@@ -1236,7 +1236,7 @@ async function handleMessages(sock, messageUpdate, printLog) {
     } catch (error) {
         console.error('❌ Error in message handler:', error.message);
         // React with ❌ on failure
-        try { await reactError(sock, message); } catch (_) {}
+        try { if (message) await reactError(sock, message); } catch (_) {}
         // Only try to send error message if we have a valid chatId
         if (chatId) {
             await sock.sendMessage(chatId, {
