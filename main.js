@@ -1,6 +1,7 @@
-// 🧹 Fix for ENOSPC / temp overflow in hosted panels
+// 🧹 Storage Manager — auto-cleanup, emergency wipe, disk monitoring
 const fs = require('fs');
 const path = require('path');
+const { startStorageManager, deleteAfter } = require('./lib/storageManager');
 
 // Redirect temp storage away from system /tmp
 const customTemp = path.join(process.cwd(), 'temp');
@@ -9,21 +10,8 @@ process.env.TMPDIR = customTemp;
 process.env.TEMP = customTemp;
 process.env.TMP = customTemp;
 
-// Auto-cleaner every 3 hours
-setInterval(() => {
-    fs.readdir(customTemp, (err, files) => {
-        if (err) return;
-        for (const file of files) {
-            const filePath = path.join(customTemp, file);
-            fs.stat(filePath, (err, stats) => {
-                if (!err && Date.now() - stats.mtimeMs > 3 * 60 * 60 * 1000) {
-                    fs.unlink(filePath, () => { });
-                }
-            });
-        }
-    });
-    console.log('🧹 Temp folder auto-cleaned');
-}, 3 * 60 * 60 * 1000);
+// Start storage manager (replaces old 3-hour interval — now cleans every 5 mins)
+startStorageManager();
 
 // ⭐ ADD THIS HELPER FUNCTION
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -385,7 +373,7 @@ async function handleMessages(sock, messageUpdate, printLog) {
         // We'll show typing indicator after command execution if needed
         let commandExecuted = false;
 
-        // Fire reaction in background — does NOT slow down command execution
+        // React with starting emoji in background (non-blocking)
         reactStart(sock, message, userMessage).catch(() => {});
 
         switch (true) {
@@ -1236,7 +1224,7 @@ async function handleMessages(sock, messageUpdate, printLog) {
     } catch (error) {
         console.error('❌ Error in message handler:', error.message);
         // React with ❌ on failure
-        try { if (message) await reactError(sock, message); } catch (_) {}
+        try { if (typeof reactError === 'function') await reactError(sock, message); } catch (_) {}
         // Only try to send error message if we have a valid chatId
         if (chatId) {
             await sock.sendMessage(chatId, {
