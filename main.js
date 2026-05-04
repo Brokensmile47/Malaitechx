@@ -127,7 +127,7 @@ const aiCommand = require('./commands/ai');
 const urlCommand = require('./commands/url');
 const { handleTranslateCommand } = require('./commands/translate');
 const { handleSsCommand } = require('./commands/ss');
-const { addCommandReaction, handleAreactCommand } = require('./lib/reactions');
+const { addCommandReaction, handleAreactCommand, reactStart, reactError } = require('./lib/reactions');
 const { goodnightCommand } = require('./commands/goodnight');
 const { shayariCommand } = require('./commands/shayari');
 const { rosedayCommand } = require('./commands/roseday');
@@ -384,6 +384,9 @@ async function handleMessages(sock, messageUpdate, printLog) {
         // Command handlers - Execute commands immediately without waiting for typing indicator
         // We'll show typing indicator after command execution if needed
         let commandExecuted = false;
+
+        // React with starting emoji before command runs
+        await reactStart(sock, message, userMessage);
 
         switch (true) {
             case userMessage === '.simage': {
@@ -1232,6 +1235,8 @@ async function handleMessages(sock, messageUpdate, printLog) {
         }
     } catch (error) {
         console.error('❌ Error in message handler:', error.message);
+        // React with ❌ on failure
+        try { await reactError(sock, message); } catch (_) {}
         // Only try to send error message if we have a valid chatId
         if (chatId) {
             await sock.sendMessage(chatId, {
