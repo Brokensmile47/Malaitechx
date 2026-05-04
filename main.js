@@ -1,7 +1,6 @@
-// 🧹 Storage Manager — auto-cleanup, emergency wipe, disk monitoring
+// 🧹 Fix for ENOSPC / temp overflow in hosted panels
 const fs = require('fs');
 const path = require('path');
-const { startStorageManager, deleteAfter } = require('./lib/storageManager');
 
 // Redirect temp storage away from system /tmp
 const customTemp = path.join(process.cwd(), 'temp');
@@ -10,8 +9,21 @@ process.env.TMPDIR = customTemp;
 process.env.TEMP = customTemp;
 process.env.TMP = customTemp;
 
-// Start storage manager (replaces old 3-hour interval — now cleans every 5 mins)
-startStorageManager();
+// Auto-cleaner every 3 hours
+setInterval(() => {
+    fs.readdir(customTemp, (err, files) => {
+        if (err) return;
+        for (const file of files) {
+            const filePath = path.join(customTemp, file);
+            fs.stat(filePath, (err, stats) => {
+                if (!err && Date.now() - stats.mtimeMs > 3 * 60 * 60 * 1000) {
+                    fs.unlink(filePath, () => { });
+                }
+            });
+        }
+    });
+    console.log('🧹 Temp folder auto-cleaned');
+}, 3 * 60 * 60 * 1000);
 
 // ⭐ ADD THIS HELPER FUNCTION
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -155,6 +167,17 @@ const channelInfo = {
     }
 };
 
+// ── Mode cache (avoids disk read on every message) ───────────────────────────
+let _modeCache = { isPublic: true, ts: 0 };
+function getCachedMode() {
+    if (Date.now() - _modeCache.ts < 5000) return _modeCache.isPublic; // 5s TTL
+    try {
+        const data = JSON.parse(fs.readFileSync('./data/messageCount.json'));
+        _modeCache = { isPublic: typeof data.isPublic === 'boolean' ? data.isPublic : true, ts: Date.now() };
+    } catch (_) {}
+    return _modeCache.isPublic;
+}
+
 async function handleMessages(sock, messageUpdate, printLog) {
     try {
         const { messages, type } = messageUpdate;
@@ -163,34 +186,30 @@ async function handleMessages(sock, messageUpdate, printLog) {
         const message = messages[0];
         if (!message?.message) return;
 
-        // Handle autoread functionality
-        await handleAutoread(sock, message);
-
-        // Handle autorecord functionality
-        await handleAutorecord(sock, message.key.remoteJid);
-
-        // Store message for antidelete feature
-        if (message.message) {
-            storeMessage(sock, message);
-        }
+        // Fire background tasks instantly (non-blocking)
+        handleAutoread(sock, message).catch(() => {});
+        handleAutorecord(sock, message.key.remoteJid).catch(() => {});
+        if (message.message) storeMessage(sock, message);
 
         // Handle message revocation
         if (message.message?.protocolMessage?.type === 0) {
-            await handleMessageRevocation(sock, message);
+            handleMessageRevocation(sock, message).catch(() => {});
             return;
         }
 
         const chatId = message.key.remoteJid;
         const senderId = message.key.participant || message.key.remoteJid;
         const isGroup = chatId.endsWith('@g.us');
-        const senderIsSudo = await isSudo(senderId);
-        const senderIsOwnerOrSudo = await isOwnerOrSudo(senderId, sock, chatId);
 
-        // ⭐ FIX: Add presence update to show bot is active
+        // Run isSudo + isOwnerOrSudo in parallel (not sequential)
+        const [senderIsSudo, senderIsOwnerOrSudo] = await Promise.all([
+            isSudo(senderId),
+            isOwnerOrSudo(senderId, sock, chatId)
+        ]);
+
+        // Presence update in background — never block commands for this
         if (!message.key.fromMe) {
-            try {
-                await sock.sendPresenceUpdate('available', chatId);
-            } catch (e) { }
+            sock.sendPresenceUpdate('available', chatId).catch(() => {});
         }
 
         // Handle button responses
@@ -236,15 +255,8 @@ async function handleMessages(sock, messageUpdate, printLog) {
         if (userMessage.startsWith('.')) {
             console.log(`📝 Command used in ${isGroup ? 'group' : 'private'}: ${userMessage}`);
         }
-        // Read bot mode once; don't early-return so moderation can still run in private mode
-        let isPublic = true;
-        try {
-            const data = JSON.parse(fs.readFileSync('./data/messageCount.json'));
-            if (typeof data.isPublic === 'boolean') isPublic = data.isPublic;
-        } catch (error) {
-            console.error('Error checking access mode:', error);
-            // default isPublic=true on error
-        }
+        // Read bot mode from cache (no disk read on every message)
+        const isPublic = getCachedMode();
         const isOwnerOrSudoCheck = message.key.fromMe || senderIsOwnerOrSudo;
         // Check if user is banned (skip ban check for unban command)
         if (isBanned(senderId) && !userMessage.startsWith('.unban')) {
@@ -278,11 +290,9 @@ async function handleMessages(sock, messageUpdate, printLog) {
         // Check for bad words and antilink FIRST, before ANY other processing
         // Always run moderation in groups, regardless of mode
         if (isGroup) {
-            if (userMessage) {
-                await handleBadwordDetection(sock, chatId, message, userMessage, senderId);
-            }
-            // Antilink checks message text internally, so run it even if userMessage is empty
-            await Antilink(message, sock);
+            // Moderation runs in background — commands fire instantly
+            if (userMessage) handleBadwordDetection(sock, chatId, message, userMessage, senderId).catch(() => {});
+            Antilink(message, sock).catch(() => {});
         }
 
         // PM blocker: block non-owner DMs when enabled (do not ban)
@@ -301,17 +311,13 @@ async function handleMessages(sock, messageUpdate, printLog) {
 
         // Then check for command prefix
         if (!userMessage.startsWith('.')) {
-            // Show typing indicator if autotyping is enabled
-            await handleAutotypingForMessage(sock, chatId, userMessage);
-
+            // Fire all non-command handlers in background — never block
+            handleAutotypingForMessage(sock, chatId, userMessage).catch(() => {});
             if (isGroup) {
-                // Always run moderation features (antitag) regardless of mode
-                await handleTagDetection(sock, chatId, message, senderId);
-                await handleMentionDetection(sock, chatId, message);
-
-                // Only run chatbot in public mode or for owner/sudo
+                handleTagDetection(sock, chatId, message, senderId).catch(() => {});
+                handleMentionDetection(sock, chatId, message).catch(() => {});
                 if (isPublic || isOwnerOrSudoCheck) {
-                    await handleChatbotResponse(sock, chatId, message, userMessage, senderId);
+                    handleChatbotResponse(sock, chatId, message, userMessage, senderId).catch(() => {});
                 }
             }
             return;
@@ -1223,8 +1229,7 @@ async function handleMessages(sock, messageUpdate, printLog) {
         }
     } catch (error) {
         console.error('❌ Error in message handler:', error.message);
-        // React with ❌ on failure
-        try { if (typeof reactError === 'function') await reactError(sock, message); } catch (_) {}
+        try { if (typeof reactError === 'function') reactError(sock, message).catch(() => {}); } catch (_) {}
         // Only try to send error message if we have a valid chatId
         if (chatId) {
             await sock.sendMessage(chatId, {
