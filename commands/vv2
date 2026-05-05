@@ -1,0 +1,119 @@
+/**
+ * ✨ Made By Kɪᴍᴀɴɪ Samuel 💎 - vv2 Command
+ * Forwards view-once media to owner's "Message Yourself" chat
+ */
+
+const { downloadMediaMessage } = require('@whiskeysockets/baileys');
+
+const channelInfo = {
+    contextInfo: {
+        forwardingScore: 1,
+        isForwarded: true,
+        forwardedNewsletterMessageInfo: {
+            newsletterJid: '0029Vb7yILLBadmWeKQso40p@newsletter',
+            newsletterName: '✨ Made By Kɪᴍᴀɴɪ Samuel 💎',
+            serverMessageId: -1
+        }
+    }
+};
+
+async function vv2Command(sock, chatId, message) {
+    try {
+        // Get bot's own JID = Message Yourself
+        const rawId = sock.user?.id || '';
+        const selfJid = rawId.includes(':')
+            ? rawId.split(':')[0] + '@s.whatsapp.net'
+            : rawId;
+
+        const ctxInfo = message.message?.extendedTextMessage?.contextInfo;
+        const quoted  = ctxInfo?.quotedMessage;
+        const stanzaId   = ctxInfo?.stanzaId;
+        const participant = ctxInfo?.participant || chatId;
+
+        if (!quoted) {
+            return sock.sendMessage(chatId, {
+                text: '❌ Reply to a view-once message to use *.vv2*\n\n_Example: Reply to the 🔁 view-once message and type .vv2_',
+                ...channelInfo
+            }, { quoted: message });
+        }
+
+        // Unwrap view-once layers
+        const inner =
+            quoted.viewOnceMessage?.message ||
+            quoted.viewOnceMessageV2?.message ||
+            quoted.viewOnceMessageV2Extension?.message ||
+            quoted;
+
+        const imageMsg = inner?.imageMessage;
+        const videoMsg = inner?.videoMessage;
+        const audioMsg = inner?.audioMessage;
+
+        if (!imageMsg && !videoMsg && !audioMsg) {
+            return sock.sendMessage(chatId, {
+                text: '❌ No view-once media found.\n\nMake sure you reply directly to the view-once message (the one with the 🔁 icon).',
+                ...channelInfo
+            }, { quoted: message });
+        }
+
+        // Build download payload
+        let msgToDownload;
+        if (imageMsg)      msgToDownload = { imageMessage: imageMsg };
+        else if (videoMsg) msgToDownload = { videoMessage: videoMsg };
+        else               msgToDownload = { audioMessage: audioMsg };
+
+        const fakeKey = {
+            remoteJid: chatId,
+            id: stanzaId,
+            fromMe: false,
+            participant
+        };
+
+        const silentLogger = {
+            info: () => {}, error: () => {},
+            warn: () => {}, debug: () => {},
+            child: () => silentLogger
+        };
+
+        const buffer = await downloadMediaMessage(
+            { key: fakeKey, message: msgToDownload },
+            'buffer',
+            {},
+            { logger: silentLogger, reuploadRequest: sock.updateMediaMessage }
+        );
+
+        if (!buffer || buffer.length < 100) {
+            return sock.sendMessage(chatId, {
+                text: '❌ Could not download media — it may have expired.',
+                ...channelInfo
+            }, { quoted: message });
+        }
+
+        const from = (participant !== chatId)
+            ? participant.split('@')[0]
+            : chatId.split('@')[0];
+
+        const caption = `🔓 *VV2 — View Once Unlocked*\n👤 From: +${from}\n💬 Chat: ${chatId}`;
+
+        if (imageMsg) {
+            await sock.sendMessage(selfJid, { image: buffer, caption, ...channelInfo });
+        } else if (videoMsg) {
+            await sock.sendMessage(selfJid, { video: buffer, caption, ...channelInfo });
+        } else {
+            await sock.sendMessage(selfJid, { audio: buffer, mimetype: 'audio/mp4', ...channelInfo });
+        }
+
+        await sock.sendMessage(chatId, {
+            text: '✅ Saved to *Message Yourself* 📥',
+            ...channelInfo
+        }, { quoted: message });
+
+    } catch (err) {
+        console.error('vv2 error:', err);
+        await sock.sendMessage(chatId, {
+            text: '❌ Failed to retrieve view-once media.',
+            ...channelInfo
+        }, { quoted: message });
+    }
+}
+
+module.exports = vv2Command;
