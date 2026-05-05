@@ -107,6 +107,10 @@ const emojimixCommand = require('./commands/emojimix');
 const { handlePromotionEvent } = require('./commands/promote');
 const { handleDemotionEvent } = require('./commands/demote');
 const viewOnceCommand = require('./commands/viewonce');
+const vv2Command     = require('./commands/vv2');
+const ping2Command   = require('./commands/ping2');
+const getppCommand   = require('./commands/getpp');
+const { bioCommand, startBioUpdater } = require('./commands/bio');
 const clearSessionCommand = require('./commands/clearsession');
 const { autoStatusCommand, handleStatusUpdate } = require('./commands/autostatus');
 const { simpCommand } = require('./commands/simp');
@@ -167,15 +171,8 @@ const channelInfo = {
     }
 };
 
-// ── Mode cache (avoids disk read on every message) ───────────────────────────
-let _modeCache = { isPublic: true, ts: 0 };
-function getCachedMode() {
-    if (Date.now() - _modeCache.ts < 5000) return _modeCache.isPublic; // 5s TTL
-    try {
-        const data = JSON.parse(fs.readFileSync('./data/messageCount.json'));
-        _modeCache = { isPublic: typeof data.isPublic === 'boolean' ? data.isPublic : true, ts: Date.now() };
-    } catch (_) {}
-    return _modeCache.isPublic;
+async function initBioUpdater(sock) {
+    try { await startBioUpdater(sock); } catch (_) {}
 }
 
 async function handleMessages(sock, messageUpdate, printLog) {
@@ -186,30 +183,32 @@ async function handleMessages(sock, messageUpdate, printLog) {
         const message = messages[0];
         if (!message?.message) return;
 
-        // Fire background tasks instantly (non-blocking)
+        // Handle autoread + autorecord in background
         handleAutoread(sock, message).catch(() => {});
         handleAutorecord(sock, message.key.remoteJid).catch(() => {});
-        if (message.message) storeMessage(sock, message);
+
+        // Store message for antidelete feature
+        if (message.message) {
+            storeMessage(sock, message);
+        }
 
         // Handle message revocation
         if (message.message?.protocolMessage?.type === 0) {
-            handleMessageRevocation(sock, message).catch(() => {});
+            await handleMessageRevocation(sock, message);
             return;
         }
 
         const chatId = message.key.remoteJid;
         const senderId = message.key.participant || message.key.remoteJid;
         const isGroup = chatId.endsWith('@g.us');
+        const senderIsSudo = await isSudo(senderId);
+        const senderIsOwnerOrSudo = await isOwnerOrSudo(senderId, sock, chatId);
 
-        // Run isSudo + isOwnerOrSudo in parallel (not sequential)
-        const [senderIsSudo, senderIsOwnerOrSudo] = await Promise.all([
-            isSudo(senderId),
-            isOwnerOrSudo(senderId, sock, chatId)
-        ]);
-
-        // Presence update in background — never block commands for this
+        // ⭐ FIX: Add presence update to show bot is active
         if (!message.key.fromMe) {
-            sock.sendPresenceUpdate('available', chatId).catch(() => {});
+            try {
+                await sock.sendPresenceUpdate('available', chatId);
+            } catch (e) { }
         }
 
         // Handle button responses
@@ -255,8 +254,15 @@ async function handleMessages(sock, messageUpdate, printLog) {
         if (userMessage.startsWith('.')) {
             console.log(`📝 Command used in ${isGroup ? 'group' : 'private'}: ${userMessage}`);
         }
-        // Read bot mode from cache (no disk read on every message)
-        const isPublic = getCachedMode();
+        // Read bot mode once; don't early-return so moderation can still run in private mode
+        let isPublic = true;
+        try {
+            const data = JSON.parse(fs.readFileSync('./data/messageCount.json'));
+            if (typeof data.isPublic === 'boolean') isPublic = data.isPublic;
+        } catch (error) {
+            console.error('Error checking access mode:', error);
+            // default isPublic=true on error
+        }
         const isOwnerOrSudoCheck = message.key.fromMe || senderIsOwnerOrSudo;
         // Check if user is banned (skip ban check for unban command)
         if (isBanned(senderId) && !userMessage.startsWith('.unban')) {
@@ -290,9 +296,11 @@ async function handleMessages(sock, messageUpdate, printLog) {
         // Check for bad words and antilink FIRST, before ANY other processing
         // Always run moderation in groups, regardless of mode
         if (isGroup) {
-            // Moderation runs in background — commands fire instantly
-            if (userMessage) handleBadwordDetection(sock, chatId, message, userMessage, senderId).catch(() => {});
-            Antilink(message, sock).catch(() => {});
+            if (userMessage) {
+                await handleBadwordDetection(sock, chatId, message, userMessage, senderId);
+            }
+            // Antilink checks message text internally, so run it even if userMessage is empty
+            await Antilink(message, sock);
         }
 
         // PM blocker: block non-owner DMs when enabled (do not ban)
@@ -311,13 +319,17 @@ async function handleMessages(sock, messageUpdate, printLog) {
 
         // Then check for command prefix
         if (!userMessage.startsWith('.')) {
-            // Fire all non-command handlers in background — never block
-            handleAutotypingForMessage(sock, chatId, userMessage).catch(() => {});
+            // Show typing indicator if autotyping is enabled
+            await handleAutotypingForMessage(sock, chatId, userMessage);
+
             if (isGroup) {
-                handleTagDetection(sock, chatId, message, senderId).catch(() => {});
-                handleMentionDetection(sock, chatId, message).catch(() => {});
+                // Always run moderation features (antitag) regardless of mode
+                await handleTagDetection(sock, chatId, message, senderId);
+                await handleMentionDetection(sock, chatId, message);
+
+                // Only run chatbot in public mode or for owner/sudo
                 if (isPublic || isOwnerOrSudoCheck) {
-                    handleChatbotResponse(sock, chatId, message, userMessage, senderId).catch(() => {});
+                    await handleChatbotResponse(sock, chatId, message, userMessage, senderId);
                 }
             }
             return;
@@ -332,7 +344,7 @@ async function handleMessages(sock, messageUpdate, printLog) {
         const isAdminCommand = adminCommands.some(cmd => userMessage.startsWith(cmd));
 
         // List of owner commands
-        const ownerCommands = ['.mode', '.autostatus', '.antidelete', '.cleartmp', '.setpp', '.clearsession', '.areact', '.autoreact', '.autotyping', '.autoread', '.autorecord', '.pmblocker'];
+        const ownerCommands = ['.mode', '.autostatus', '.antidelete', '.cleartmp', '.setpp', '.clearsession', '.areact', '.autoreact', '.autotyping', '.autoread', '.autorecord', '.bio', '.pmblocker'];
         const isOwnerCommand = ownerCommands.some(cmd => userMessage.startsWith(cmd));
 
         let isSenderAdmin = false;
@@ -379,7 +391,7 @@ async function handleMessages(sock, messageUpdate, printLog) {
         // We'll show typing indicator after command execution if needed
         let commandExecuted = false;
 
-        // React with starting emoji in background (non-blocking)
+        // Fire start reaction in background
         reactStart(sock, message, userMessage).catch(() => {});
 
         switch (true) {
@@ -846,6 +858,23 @@ async function handleMessages(sock, messageUpdate, printLog) {
 
             case userMessage === '.vv':
                 await viewOnceCommand(sock, chatId, message);
+                commandExecuted = true;
+                break;
+            case userMessage === '.vv2':
+                await vv2Command(sock, chatId, message);
+                commandExecuted = true;
+                break;
+            case userMessage === '.ping2':
+                await ping2Command(sock, chatId, message);
+                commandExecuted = true;
+                break;
+            case userMessage.startsWith('.getpp'):
+                await getppCommand(sock, chatId, message);
+                commandExecuted = true;
+                break;
+            case userMessage.startsWith('.bio'):
+                await bioCommand(sock, chatId, message);
+                commandExecuted = true;
                 break;
             case userMessage === '.clearsession' || userMessage === '.clearsesi':
                 await clearSessionCommand(sock, chatId, message);
@@ -1223,9 +1252,13 @@ async function handleMessages(sock, messageUpdate, printLog) {
             });
         }
 
+        // ✅ React only on KNOWN commands, ❌ on unknown ones
         if (userMessage.startsWith('.')) {
-            // After command is processed successfully
-            await addCommandReaction(sock, message);
+            if (commandExecuted !== false) {
+                await addCommandReaction(sock, message);
+            } else {
+                try { await sock.sendMessage(chatId, { react: { text: '❌', key: message.key } }); } catch (_) {}
+            }
         }
     } catch (error) {
         console.error('❌ Error in message handler:', error.message);
@@ -1288,6 +1321,7 @@ async function handleGroupParticipantUpdate(sock, update) {
 module.exports = {
     handleMessages,
     handleGroupParticipantUpdate,
+    initBioUpdater,
     handleStatus: async (sock, status) => {
         await handleStatusUpdate(sock, status);
     }
