@@ -1,0 +1,145 @@
+/**
+ * ✨ Made By Kɪᴍᴀɴɪ Samuel 💎 - ping2 Command
+ * Shows detailed bot stats: ping, RAM, disk, CPU, uptime, version
+ */
+
+const os   = require('os');
+const fs   = require('fs');
+const path = require('path');
+const { exec } = require('child_process');
+const util = require('util');
+const execPromise = util.promisify(exec);
+
+const channelInfo = {
+    contextInfo: {
+        forwardingScore: 1,
+        isForwarded: true,
+        forwardedNewsletterMessageInfo: {
+            newsletterJid: '0029Vb7yILLBadmWeKQso40p@newsletter',
+            newsletterName: '✨ Made By Kɪᴍᴀɴɪ Samuel 💎',
+            serverMessageId: -1
+        }
+    }
+};
+
+function formatUptime(sec) {
+    const d = Math.floor(sec / 86400);
+    const h = Math.floor((sec % 86400) / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = Math.floor(sec % 60);
+    if (d > 0) return `${d}d ${h}h ${m}m`;
+    if (h > 0) return `${h}h ${m}m ${s}s`;
+    return `${m}m ${s}s`;
+}
+
+function fmt(bytes) {
+    if (bytes < 1024)             return `${bytes} B`;
+    if (bytes < 1024 ** 2)       return `${(bytes / 1024).toFixed(1)} KB`;
+    if (bytes < 1024 ** 3)       return `${(bytes / 1024 ** 2).toFixed(1)} MB`;
+    return `${(bytes / 1024 ** 3).toFixed(2)} GB`;
+}
+
+function getDirSize(dir) {
+    let total = 0;
+    try {
+        for (const f of fs.readdirSync(dir)) {
+            try {
+                const fp   = path.join(dir, f);
+                const stat = fs.statSync(fp);
+                total += stat.isDirectory() ? getDirSize(fp) : stat.size;
+            } catch (_) {}
+        }
+    } catch (_) {}
+    return total;
+}
+
+function bar(pct, len = 10) {
+    const filled = Math.round((Math.min(pct, 100) / 100) * len);
+    return '█'.repeat(filled) + '░'.repeat(len - filled);
+}
+
+async function getDisk() {
+    try {
+        const { stdout } = await execPromise(`df -k ${process.cwd()}`);
+        const p = stdout.trim().split('\n')[1].split(/\s+/);
+        return {
+            total: parseInt(p[1]) * 1024,
+            used:  parseInt(p[2]) * 1024,
+            free:  parseInt(p[3]) * 1024,
+            pct:   p[4]
+        };
+    } catch (_) { return null; }
+}
+
+async function ping2Command(sock, chatId, message) {
+    const start = Date.now();
+    try {
+        const ping = Date.now() - start;
+
+        const mem     = process.memoryUsage();
+        const ramFree  = os.freemem();
+        const ramTotal = os.totalmem();
+        const ramUsed  = ramTotal - ramFree;
+        const ramPct   = Math.round((ramUsed / ramTotal) * 100);
+
+        const cpus     = os.cpus();
+        const cpuModel = cpus[0]?.model?.trim() || 'Unknown';
+
+        const disk    = await getDisk();
+        const sesSize = getDirSize(path.join(process.cwd(), 'session'));
+        const tmpSize = getDirSize(path.join(process.cwd(), 'tmp')) +
+                        getDirSize(path.join(process.cwd(), 'temp'));
+
+        let txt = '';
+        txt += `╭━━━━━━━━━━━━━━━━━━━━━╮\n`;
+        txt += `┃  🤖 *MALAI XD — BOT STATUS*\n`;
+        txt += `╰━━━━━━━━━━━━━━━━━━━━━╯\n\n`;
+
+        txt += `*⚡ PERFORMANCE*\n`;
+        txt += `├ 🏓 Ping        : *${ping} ms*\n`;
+        txt += `├ ⏱️  Bot Uptime  : *${formatUptime(process.uptime())}*\n`;
+        txt += `└ 🖥️  Sys Uptime  : *${formatUptime(os.uptime())}*\n\n`;
+
+        txt += `*💾 MEMORY*\n`;
+        txt += `├ 🟢 Heap Used   : *${fmt(mem.heapUsed)}*\n`;
+        txt += `├ 🔵 RAM Used    : *${fmt(ramUsed)}*\n`;
+        txt += `├ ⬜ RAM Total   : *${fmt(ramTotal)}*\n`;
+        txt += `└ 📊 Usage       : [${bar(ramPct)}] *${ramPct}%*\n\n`;
+
+        if (disk) {
+            const diskPct = Math.round((disk.used / disk.total) * 100);
+            txt += `*💿 STORAGE*\n`;
+            txt += `├ ✅ Free        : *${fmt(disk.free)}*\n`;
+            txt += `├ 📦 Used        : *${fmt(disk.used)}*\n`;
+            txt += `├ 🗄️  Total       : *${fmt(disk.total)}*\n`;
+            txt += `└ 📊 Usage       : [${bar(diskPct)}] *${disk.pct}*\n\n`;
+        }
+
+        txt += `*📁 BOT FILES*\n`;
+        txt += `├ 🔑 Session     : *${fmt(sesSize)}*\n`;
+        txt += `└ 🗑️  Temp/Tmp    : *${fmt(tmpSize)}*\n\n`;
+
+        txt += `*🖥️ SYSTEM*\n`;
+        txt += `├ 💻 OS          : *${os.type()} ${os.arch()}*\n`;
+        txt += `├ 🧠 CPU         : *${cpuModel}*\n`;
+        txt += `├ ⚙️  Cores       : *${cpus.length}*\n`;
+        txt += `└ 🌐 Node.js     : *${process.version}*\n\n`;
+
+        txt += `*🤖 BOT INFO*\n`;
+        txt += `├ 📛 Name        : *Malai XD 🦈*\n`;
+        txt += `├ 🏷️  Version     : *v3.0.7*\n`;
+        txt += `├ 👑 Owner       : *Kɪᴍᴀɴɪ Samuel*\n`;
+        txt += `└ 🟢 Status      : *Online & Active*`;
+
+        await sock.sendMessage(chatId, { text: txt, ...channelInfo }, { quoted: message });
+
+    } catch (err) {
+        console.error('ping2 error:', err);
+        await sock.sendMessage(chatId, {
+            text: '❌ Failed to fetch bot details.',
+            ...channelInfo
+        }, { quoted: message });
+    }
+}
+
+module.exports = ping2Command;
