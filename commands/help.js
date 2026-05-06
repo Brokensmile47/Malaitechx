@@ -2,19 +2,74 @@ const settings = require('../settings');
 const fs = require('fs');
 const path = require('path');
 
+function getGreeting() {
+    const hour = new Date().getHours();
+    if (hour >= 5  && hour < 12) return 'Good Morning 🌅';
+    if (hour >= 12 && hour < 17) return 'Good Afternoon ☀️';
+    if (hour >= 17 && hour < 21) return 'Good Evening 🌆';
+    return 'Good Night 🌙';
+}
+
+function getDateTime() {
+    const now   = new Date();
+    const day   = String(now.getDate()).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const year  = now.getFullYear();
+    let   hours = now.getHours();
+    const mins  = String(now.getMinutes()).padStart(2, '0');
+    const secs  = String(now.getSeconds()).padStart(2, '0');
+    const ampm  = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12 || 12;
+    return {
+        date: `${day}/${month}/${year}`,
+        time: `${hours}:${mins}:${secs} ${ampm}`
+    };
+}
+
 async function helpCommand(sock, chatId, message) {
+    // Get real user count from tracker
+    const getUserCount = global.getUserCount || (() => 0);
     const channelLink = global.channelLink || 'https://www.whatsapp.com/channel/0029Vb7yILLBadmWeKQso40p';
 
-    const helpMessage = `
-╔═══════════════════╗
-   *🤖 ${settings.botName || '✨ Made By Kɪᴍᴀɴɪ Samuel 💎'}*  
-   Version: *${settings.version || '3.0.0'}*
-   by ${settings.botOwner || 'Kimani Samuel'}
-   YT : ${global.ytch}
-╚═══════════════════╝
+    // ── Detect the sender ─────────────────────────────────────────────────────
+    const senderJid = message.key.participant || message.key.remoteJid;
+    const senderNum = senderJid.split('@')[0];
 
-*Available Commands:*
+    // Try to get their saved name
+    let senderName = senderNum;
+    try {
+        const contact = await sock.contactsUpsert || {};
+        // Try getName if available
+        if (typeof sock.getName === 'function') {
+            const name = await sock.getName(senderJid);
+            if (name && name !== senderNum) senderName = name;
+        }
+    } catch (_) {}
 
+    // ── Live date & time ──────────────────────────────────────────────────────
+    const { date, time } = getDateTime();
+    const greeting       = getGreeting();
+
+    // ── Group user count ──────────────────────────────────────────────────────
+    const userCount = getUserCount();
+
+    // ── Info card (matches the style in screenshot) ───────────────────────────
+    const infoCard =
+`┌──────────────────❖
+│  🦈 *MALAITECHX*
+├──────────────────❖
+│  🤖 ${greeting}
+├──────────────────❖
+│ 🕵️ USER: *${senderName}*
+│ 📱 NUMBER: *+${senderNum}*
+│ 📅 DATE: *${date}*
+│ ⏰ TIME: *${time}*
+│ ⭐ USERS: *${userCount}*
+└──────────────────❖`;
+
+    // ── Commands list ─────────────────────────────────────────────────────────
+    const commands =
+`
 ╔═══════════════════╗
 🌐 *General Commands*:
 ║ ➤ .help or .menu
@@ -29,10 +84,10 @@ async function helpCommand(sock, chatId, message) {
 ║ ➤ .weather <city>
 ║ ➤ .news
 ║ ➤ .attp <text>
-║ ➤ .lyrics <song_title>
+║ ➤ .lyrics <song>
 ║ ➤ .8ball <question>
 ║ ➤ .groupinfo
-║ ➤ .staff or .admins 
+║ ➤ .staff or .admins
 ║ ➤ .vv
 ║ ➤ .vv2
 ║ ➤ .getpp (reply to msg)
@@ -41,7 +96,7 @@ async function helpCommand(sock, chatId, message) {
 ║ ➤ .ss <link>
 ║ ➤ .jid
 ║ ➤ .url
-╚═══════════════════╝ 
+╚═══════════════════╝
 
 ╔═══════════════════╗
 👮‍♂️ *Admin Commands*:
@@ -82,14 +137,12 @@ async function helpCommand(sock, chatId, message) {
 ║ ➤ .setpp <reply to image>
 ║ ➤ .autoreact <on/off>
 ║ ➤ .autostatus <on/off>
-║ ➤ .autostatus react <on/off>
 ║ ➤ .autotyping <on/off>
 ║ ➤ .autoread <on/off>
 ║ ➤ .autorecord <on/off>
 ║ ➤ .bio <on/off>
 ║ ➤ .anticall <on/off>
 ║ ➤ .pmblocker <on/off/status>
-║ ➤ .pmblocker setmsg <text>
 ║ ➤ .setmention <reply to msg>
 ║ ➤ .mention <on/off>
 ╚═══════════════════╝
@@ -104,19 +157,19 @@ async function helpCommand(sock, chatId, message) {
 ║ ➤ .crop <reply to image>
 ║ ➤ .tgsticker <Link>
 ║ ➤ .meme
-║ ➤ .take <packname> 
+║ ➤ .take <packname>
 ║ ➤ .emojimix <emj1>+<emj2>
 ║ ➤ .igs <insta link>
 ║ ➤ .igsc <insta link>
-╚═══════════════════╝  
+╚═══════════════════╝
 
 ╔═══════════════════╗
 🖼️ *Pies Commands*:
 ║ ➤ .pies <country>
-║ ➤ .china 
-║ ➤ .indonesia 
-║ ➤ .japan 
-║ ➤ .korea 
+║ ➤ .china
+║ ➤ .indonesia
+║ ➤ .japan
+║ ➤ .korea
 ║ ➤ .hijab
 ╚═══════════════════╝
 
@@ -144,7 +197,7 @@ async function helpCommand(sock, chatId, message) {
 🎯 *Fun Commands*:
 ║ ➤ .compliment @user
 ║ ➤ .insult @user
-║ ➤ .flirt 
+║ ➤ .flirt
 ║ ➤ .shayari
 ║ ➤ .goodnight
 ║ ➤ .roseday
@@ -197,32 +250,32 @@ async function helpCommand(sock, chatId, message) {
 ║ ➤ .lgbt
 ║ ➤ .lolice
 ║ ➤ .its-so-stupid
-║ ➤ .namecard 
+║ ➤ .namecard
 ║ ➤ .oogway
 ║ ➤ .tweet
-║ ➤ .ytcomment 
-║ ➤ .comrade 
-║ ➤ .gay 
-║ ➤ .glass 
-║ ➤ .jail 
-║ ➤ .passed 
+║ ➤ .ytcomment
+║ ➤ .comrade
+║ ➤ .gay
+║ ➤ .glass
+║ ➤ .jail
+║ ➤ .passed
 ║ ➤ .triggered
 ╚═══════════════════╝
 
 ╔═══════════════════╗
 🖼️ *ANIME*:
-║ ➤ .nom 
-║ ➤ .poke 
-║ ➤ .cry 
-║ ➤ .kiss 
-║ ➤ .pat 
-║ ➤ .hug 
-║ ➤ .wink 
-║ ➤ .facepalm 
+║ ➤ .nom
+║ ➤ .poke
+║ ➤ .cry
+║ ➤ .kiss
+║ ➤ .pat
+║ ➤ .hug
+║ ➤ .wink
+║ ➤ .facepalm
 ╚═══════════════════╝
 
 ╔═══════════════════╗
-💻 *Github Commands:*
+💻 *Github Commands*:
 ║ ➤ .git
 ║ ➤ .github
 ║ ➤ .sc
@@ -230,44 +283,56 @@ async function helpCommand(sock, chatId, message) {
 ║ ➤ .repo
 ╚═══════════════════╝
 
-*Made By Kimani Samuel*
-📢 ${channelLink}`;
+*Made By Kimani Samuel*`;
+
+    const fullCaption = infoCard + commands;
+
+    // ── Channel link shown as "View channel" button via externalAdReply ───────
+    const contextInfo = {
+        forwardingScore: 1,
+        isForwarded: true,
+        forwardedNewsletterMessageInfo: {
+            newsletterJid: '0029Vb7yILLBadmWeKQso40p@newsletter',
+            newsletterName: '✨ Made By Kɪᴍᴀɴɪ Samuel 💎',
+            serverMessageId: -1
+        },
+        externalAdReply: {
+            title: '🦈 MALAITECHX',
+            body: 'Made By Kimani Samuel',
+            thumbnailUrl: 'https://www.whatsapp.com/channel/0029Vb7yILLBadmWeKQso40p',
+            sourceUrl: channelLink,
+            mediaType: 1,
+            renderLargerThumbnail: false
+        }
+    };
 
     try {
         const imagePath = path.join(__dirname, '../assets/bot_image.jpg');
 
+        // Read bot image for the externalAdReply thumbnail too
+        let imageBuffer = null;
         if (fs.existsSync(imagePath)) {
-            const imageBuffer = fs.readFileSync(imagePath);
+            imageBuffer = fs.readFileSync(imagePath);
+        }
+
+        if (imageBuffer) {
+            // Send with MalaiXD logo as the image + channel view button
             await sock.sendMessage(chatId, {
                 image: imageBuffer,
-                caption: helpMessage,
-                contextInfo: {
-                    forwardingScore: 1,
-                    isForwarded: true,
-                    forwardedNewsletterMessageInfo: {
-                        newsletterJid: '0029Vb7yILLBadmWeKQso40p@newsletter',
-                        newsletterName: '✨ Made By Kɪᴍᴀɴɪ Samuel 💎',
-                        serverMessageId: -1
-                    }
-                }
+                caption: fullCaption,
+                contextInfo
             }, { quoted: message });
         } else {
             await sock.sendMessage(chatId, {
-                text: helpMessage,
-                contextInfo: {
-                    forwardingScore: 1,
-                    isForwarded: true,
-                    forwardedNewsletterMessageInfo: {
-                        newsletterJid: '0029Vb7yILLBadmWeKQso40p@newsletter',
-                        newsletterName: '✨ Made By Kɪᴍᴀɴɪ Samuel 💎 By Kimani Samuel',
-                        serverMessageId: -1
-                    }
-                }
-            });
+                text: fullCaption,
+                contextInfo
+            }, { quoted: message });
         }
     } catch (error) {
         console.error('Error in help command:', error);
-        await sock.sendMessage(chatId, { text: helpMessage });
+        try {
+            await sock.sendMessage(chatId, { text: fullCaption });
+        } catch (_) {}
     }
 }
 
