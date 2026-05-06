@@ -5,7 +5,7 @@
 
 const fs   = require('fs');
 const path = require('path');
-const { badge, footer, getContextInfo } = require('./darkTheme');
+const { badge, footer, getContextInfo } = require('../lib/darkTheme');
 
 const DATA = path.join(process.cwd(), 'data');
 
