@@ -4,7 +4,7 @@
  */
 
 const os   = require('os');
-const { footer, getContextInfo } = require('./darkTheme');
+const { footer, getContextInfo } = require('../lib/darkTheme');
 const fs   = require('fs');
 const path = require('path');
 const { exec } = require('child_process');
@@ -119,7 +119,7 @@ async function ping2Command(sock, chatId, message) {
         txt += `*🤖 BOT INFO*\n`;
         txt += `├ 📛 Name        : *Malai XD 🦈*\n`;
         txt += `├ 🏷️  Version     : *v3.0.7*\n`;
-        txt += `├ 👑 Owner       : *Kimani Samuel*\n`;
+        txt += `├ 👑 Owner       : *Kɪᴍᴀɴɪ Samuel*\n`;
         txt += `└ 🟢 Status      : *Online & Active*`;
         txt += footer();
 
