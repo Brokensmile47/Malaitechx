@@ -17,7 +17,28 @@ const FileType = require('file-type')
 const path = require('path')
 const axios = require('axios')
 const { handleMessages, handleGroupParticipantUpdate, handleStatus, initBioUpdater } = require('./main');
-const { initBotProfile } = require('./lib/botProfile');
+// ── Bot profile setter (inline) ──────────────────────────────────────────────
+const initBotProfile = async (sock) => {
+    try {
+        const fs   = require('fs');
+        const path = require('path');
+        const selfJid = sock.user?.id?.replace(/:\d+/, '') + '@s.whatsapp.net';
+        // Set name
+        try { await sock.updateProfileName('Malaitechx'); } catch (_) {}
+        // Set picture
+        const imgs = ['assets/bot_image.jpg','assets/bot_image.png','assets/logo.jpg'];
+        for (const img of imgs) {
+            const full = path.join(process.cwd(), img);
+            if (fs.existsSync(full)) {
+                try {
+                    await sock.updateProfilePicture(selfJid, fs.readFileSync(full));
+                    console.log('✅ Bot profile picture set');
+                } catch (_) {}
+                break;
+            }
+        }
+    } catch (e) { console.warn('initBotProfile:', e.message); }
+};
 const PhoneNumber = require('awesome-phonenumber')
 const { imageToWebp, videoToWebp, writeExifImg, writeExifVid } = require('./lib/exif')
 const { smsg, isUrl, generateMessageTag, getBuffer, getSizeMedia, fetch, await, sleep, reSize } = require('./lib/myfunc')
