@@ -17,6 +17,7 @@ const FileType = require('file-type')
 const path = require('path')
 const axios = require('axios')
 const { handleMessages, handleGroupParticipantUpdate, handleStatus, initBioUpdater } = require('./main');
+const { initBotProfile } = require('./lib/botProfile');
 const PhoneNumber = require('awesome-phonenumber')
 const { imageToWebp, videoToWebp, writeExifImg, writeExifVid } = require('./lib/exif')
 const { smsg, isUrl, generateMessageTag, getBuffer, getSizeMedia, fetch, await, sleep, reSize } = require('./lib/myfunc')
@@ -108,10 +109,15 @@ async function startXeonBotInc() {
             markOnlineOnConnect: true,
             generateHighQualityLinkPreview: true,
             syncFullHistory: false,
+            transactionOpts: { maxCommitRetries: 10, delayBetweenTriesMs: 3000 },
             getMessage: async (key) => {
-                let jid = jidNormalizedUser(key.remoteJid)
-                let msg = await store.loadMessage(jid, key.id)
-                return msg?.message || ""
+                try {
+                    let jid = jidNormalizedUser(key.remoteJid)
+                    let msg = await store.loadMessage(jid, key.id)
+                    return msg?.message || { conversation: '' }
+                } catch (_) {
+                    return { conversation: '' }
+                }
             },
             msgRetryCounterCache,
             defaultQueryTimeoutMs: 60000,
@@ -143,10 +149,7 @@ async function startXeonBotInc() {
             }
             if (mek.key.id.startsWith('BAE5') && mek.key.id.length === 16) return
 
-            // Clear message retry cache to prevent memory bloat
-            if (XeonBotInc?.msgRetryCounterCache) {
-                XeonBotInc.msgRetryCounterCache.clear()
-            }
+            // NOTE: Do NOT clear msgRetryCounterCache here — it breaks linked device sync
 
             try {
                 await handleMessages(XeonBotInc, chatUpdate, true)
@@ -261,6 +264,9 @@ async function startXeonBotInc() {
             console.log(chalk.magenta(` `))
             console.log(chalk.yellow(`🌿Connected to => ` + JSON.stringify(XeonBotInc.user, null, 2)))
 
+            // 🟢 Set permanent bot profile picture and name
+            try { await initBotProfile(XeonBotInc); } catch (_) {}
+
             // 🟢 Start auto-bio updater (updates WhatsApp status every minute)
             try { await initBioUpdater(XeonBotInc); } catch (_) {}
 
@@ -353,6 +359,26 @@ async function startXeonBotInc() {
             }
         } catch (e) {
             // ignore
+        }
+    });
+
+    // Handle message updates from linked devices (receipts, edits, reactions)
+    XeonBotInc.ev.on('messages.update', async (updates) => {
+        for (const update of updates) {
+            if (update.update?.message) {
+                try {
+                    await store.loadMessage(update.key.remoteJid, update.key.id);
+                } catch (_) {}
+            }
+        }
+    });
+
+    // Handle message receipt updates (linked device read receipts)
+    XeonBotInc.ev.on('message-receipt.update', async (updates) => {
+        for (const { key, receipt } of updates) {
+            try {
+                await store.loadMessage(key.remoteJid, key.id);
+            } catch (_) {}
         }
     });
 
