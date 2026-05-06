@@ -132,6 +132,8 @@ const urlCommand = require('./commands/url');
 const { handleTranslateCommand } = require('./commands/translate');
 const { handleSsCommand } = require('./commands/ss');
 const { addCommandReaction, handleAreactCommand, reactStart, reactError } = require('./lib/reactions');
+const { registerUser, getUserCount } = require('./lib/userTracker');
+global.getUserCount = getUserCount;
 const { goodnightCommand } = require('./commands/goodnight');
 const { shayariCommand } = require('./commands/shayari');
 const { rosedayCommand } = require('./commands/roseday');
@@ -201,6 +203,9 @@ async function handleMessages(sock, messageUpdate, printLog) {
 
         const chatId = message.key.remoteJid;
         const senderId = message.key.participant || message.key.remoteJid;
+
+        // Track unique users
+        registerUser(senderId);
         const isGroup = chatId.endsWith('@g.us');
         const senderIsSudo = await isSudo(senderId);
         const senderIsOwnerOrSudo = await isOwnerOrSudo(senderId, sock, chatId);
