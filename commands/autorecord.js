@@ -125,35 +125,35 @@ function isAutorecordEnabled() {
  * Fake recording presence (20 seconds like autotyping style delay system)
  */
 async function handleAutorecord(sock, chatId) {
-    // Don't fire during reconnection — causes xml-not-well-formed stream crash
+    // Guard: only run when fully connected
     if (!global.isConnected) return false;
-    if (isAutorecordEnabled()) {
-        try {
-            // Subscribe to presence
-            await sock.presenceSubscribe(chatId);
+    if (!isAutorecordEnabled()) return false;
 
-            // Check connection before each presence update
-            if (!global.isConnected) return false;
-            await sock.sendPresenceUpdate('recording', chatId);
+    try {
+        // Subscribe first
+        if (!global.isConnected) return false;
+        await sock.presenceSubscribe(chatId);
 
-            // Human-like delay (20 seconds total)
-            const recordDelay = 20000;
-            await new Promise(resolve => setTimeout(resolve, recordDelay));
+        // Start recording indicator
+        if (!global.isConnected) return false;
+        await sock.sendPresenceUpdate('recording', chatId);
 
-            // Refresh recording status (keeps it alive visually)
-            await sock.sendPresenceUpdate('recording', chatId);
-            await new Promise(resolve => setTimeout(resolve, 1500));
-
-            // Stop recording
-            await sock.sendPresenceUpdate('paused', chatId);
-
-            return true;
-        } catch (error) {
-            console.error('❌ Error in autorecord presence:', error);
-            return false;
+        // Wait in small chunks — check connection each time
+        const chunks = 10; // 10 x 2s = 20s total
+        for (let i = 0; i < chunks; i++) {
+            await new Promise(r => setTimeout(r, 2000));
+            if (!global.isConnected) return false; // bail if disconnected mid-wait
         }
+
+        // Stop recording
+        if (!global.isConnected) return false;
+        await sock.sendPresenceUpdate('paused', chatId);
+
+        return true;
+    } catch (_) {
+        // Silent — never crash the bot over presence errors
+        return false;
     }
-    return false;
 }
 
 module.exports = {
