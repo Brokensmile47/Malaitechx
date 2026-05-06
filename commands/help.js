@@ -3,6 +3,8 @@ const fs = require('fs');
 const path = require('path');
 
 async function helpCommand(sock, chatId, message) {
+    const channelLink = global.channelLink || 'https://www.whatsapp.com/channel/0029Vb7yILLBadmWeKQso40p';
+
     const helpMessage = `
 ╔═══════════════════╗
    *🤖 ${settings.botName || '✨ Made By Kɪᴍᴀɴɪ Samuel 💎'}*  
@@ -228,14 +230,12 @@ async function helpCommand(sock, chatId, message) {
 ║ ➤ .repo
 ╚═══════════════════╝
 
-Join our channel for updates:
-
 *Made By Kimani Samuel*
-📢 https://www.whatsapp.com/channel/0029Vb7yILLBadmWeKQso40p\`;
+📢 ${channelLink}`;
 
     try {
         const imagePath = path.join(__dirname, '../assets/bot_image.jpg');
-        
+
         if (fs.existsSync(imagePath)) {
             const imageBuffer = fs.readFileSync(imagePath);
             await sock.sendMessage(chatId, {
@@ -252,7 +252,7 @@ Join our channel for updates:
                 }
             }, { quoted: message });
         } else {
-            await sock.sendMessage(chatId, { 
+            await sock.sendMessage(chatId, {
                 text: helpMessage,
                 contextInfo: {
                     forwardingScore: 1,
@@ -261,7 +261,7 @@ Join our channel for updates:
                         newsletterJid: '0029Vb7yILLBadmWeKQso40p@newsletter',
                         newsletterName: '✨ Made By Kɪᴍᴀɴɪ Samuel 💎 By Kimani Samuel',
                         serverMessageId: -1
-                    } 
+                    }
                 }
             });
         }
