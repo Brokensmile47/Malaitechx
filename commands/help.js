@@ -283,7 +283,10 @@ async function helpCommand(sock, chatId, message) {
 ║ ➤ .repo
 ╚═══════════════════╝
 
-*Made By Kimani Samuel*`;
+*Made By Kimani Samuel*
+📢 ${channelLink}
+
+> _Tap below to join our channel_ 👇`;
 
     const fullCaption = infoCard + commands;
 
@@ -298,11 +301,10 @@ async function helpCommand(sock, chatId, message) {
         },
         externalAdReply: {
             title: '🦈 MALAITECHX',
-            body: 'Made By Kimani Samuel',
-            thumbnailUrl: 'https://www.whatsapp.com/channel/0029Vb7yILLBadmWeKQso40p',
+            body: 'Made By Kimani Samuel — Tap to View Channel',
             sourceUrl: channelLink,
             mediaType: 1,
-            renderLargerThumbnail: false
+            renderLargerThumbnail: true
         }
     };
 
