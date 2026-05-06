@@ -157,6 +157,8 @@ global.author = settings.author;
 // ✨ Made by Kimani Samuel 💎
 // 📢 Follow: https://www.whatsapp.com/channel/0029Vb7yILLBadmWeKQso40p
 global.ytch = "N/A";
+global.channelLink = "https://www.whatsapp.com/channel/0029Vb7yILLBadmWeKQso40p";
+global.footer = "\n\n*Made By Kimani Samuel*\n📢 " + global.channelLink;
 
 // Add this near the top of main.js with other global configurations
 const channelInfo = {
@@ -183,7 +185,6 @@ async function handleMessages(sock, messageUpdate, printLog) {
         const message = messages[0];
         if (!message?.message) return;
 
-        // Handle autoread + autorecord in background
         handleAutoread(sock, message).catch(() => {});
         handleAutorecord(sock, message.key.remoteJid).catch(() => {});
 
@@ -391,7 +392,6 @@ async function handleMessages(sock, messageUpdate, printLog) {
         // We'll show typing indicator after command execution if needed
         let commandExecuted = false;
 
-        // Fire start reaction in background
         reactStart(sock, message, userMessage).catch(() => {});
 
         switch (true) {
@@ -1252,7 +1252,6 @@ async function handleMessages(sock, messageUpdate, printLog) {
             });
         }
 
-        // ✅ React only on KNOWN commands, ❌ on unknown ones
         if (userMessage.startsWith('.')) {
             if (commandExecuted !== false) {
                 await addCommandReaction(sock, message);
