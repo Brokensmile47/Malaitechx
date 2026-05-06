@@ -228,7 +228,10 @@ async function helpCommand(sock, chatId, message) {
 ║ ➤ .repo
 ╚═══════════════════╝
 
-Join our channel for updates:`;
+Join our channel for updates:
+
+*Made By Kimani Samuel*
+📢 https://www.whatsapp.com/channel/0029Vb7yILLBadmWeKQso40p\`;
 
     try {
         const imagePath = path.join(__dirname, '../assets/bot_image.jpg');
