@@ -1,94 +1,147 @@
-const fs = require('fs');
+/**
+ * ✨ Made By Kɪᴍᴀɴɪ Samuel 💎 - Settings Command
+ * Shows all bot toggles with their current on/off status
+ */
 
-function readJsonSafe(path, fallback) {
-    try {
-        const txt = fs.readFileSync(path, 'utf8');
-        return JSON.parse(txt);
-    } catch (_) {
-        return fallback;
+const fs   = require('fs');
+const path = require('path');
+
+const DATA = path.join(process.cwd(), 'data');
+
+const channelLink = () => global.channelLink || 'https://www.whatsapp.com/channel/0029Vb7yILLBadmWeKQso40p';
+
+const contextInfo = {
+    forwardingScore: 1,
+    isForwarded: true,
+    forwardedNewsletterMessageInfo: {
+        newsletterJid: '0029Vb7yILLBadmWeKQso40p@newsletter',
+        newsletterName: '✨ Made By Kɪᴍᴀɴɪ Samuel 💎',
+        serverMessageId: -1
+    },
+    externalAdReply: {
+        title: '🦈 MALAITECHX',
+        body: 'Made By Kimani Samuel',
+        sourceUrl: 'https://www.whatsapp.com/channel/0029Vb7yILLBadmWeKQso40p',
+        mediaType: 1,
+        renderLargerThumbnail: false
     }
+};
+
+// Read a JSON config file safely
+function readConfig(filename) {
+    try {
+        const p = path.join(DATA, filename);
+        if (!fs.existsSync(p)) return {};
+        return JSON.parse(fs.readFileSync(p, 'utf8'));
+    } catch (_) { return {}; }
 }
 
-const isOwnerOrSudo = require('../lib/isOwner');
+// Status emoji
+function status(val) {
+    return val ? '✅ ON' : '❌ OFF';
+}
 
 async function settingsCommand(sock, chatId, message) {
     try {
-        const senderId = message.key.participant || message.key.remoteJid;
-        const isOwner = await isOwnerOrSudo(senderId, sock, chatId);
-        
-        if (!message.key.fromMe && !isOwner) {
-            await sock.sendMessage(chatId, { text: 'Only bot owner can use this command!' }, { quoted: message });
-            return;
-        }
+        // Read all feature configs
+        const autotyping  = readConfig('autotyping.json');
+        const autoread    = readConfig('autoread.json');
+        const autorecord  = readConfig('autorecord.json');
+        const autostatus  = readConfig('autostatus.json');
+        const areact      = readConfig('areact.json');
+        const antidelete  = readConfig('antidelete.json');
+        const antilink    = readConfig('antilink.json');
+        const antibadword = readConfig('antibadword.json');
+        const antitag     = readConfig('antitag.json');
+        const anticall    = readConfig('anticall.json');
+        const pmblocker   = readConfig('pmblocker.json');
+        const chatbot     = readConfig('chatbot.json');
+        const welcome     = readConfig('welcome.json');
+        const goodbye     = readConfig('goodbye.json');
+        const bio         = readConfig('bio.json');
+        const mode        = readConfig('messageCount.json');
+        const mention     = readConfig('mention.json');
 
-        const isGroup = chatId.endsWith('@g.us');
-        const dataDir = './data';
+        const isPublic = typeof mode.isPublic === 'boolean' ? mode.isPublic : true;
 
-        const mode = readJsonSafe(`${dataDir}/messageCount.json`, { isPublic: true });
-        const autoStatus = readJsonSafe(`${dataDir}/autoStatus.json`, { enabled: false });
-        const autoread = readJsonSafe(`${dataDir}/autoread.json`, { enabled: false });
-        const autotyping = readJsonSafe(`${dataDir}/autotyping.json`, { enabled: false });
-        const pmblocker = readJsonSafe(`${dataDir}/pmblocker.json`, { enabled: false });
-        const anticall = readJsonSafe(`${dataDir}/anticall.json`, { enabled: false });
-        const userGroupData = readJsonSafe(`${dataDir}/userGroupData.json`, {
-            antilink: {}, antibadword: {}, welcome: {}, goodbye: {}, chatbot: {}, antitag: {}
-        });
-        const autoReaction = Boolean(userGroupData.autoReaction);
+        const msg =
+`╔═══════════════════════╗
+┃  ⚙️ *MALAITECHX SETTINGS*
+╚═══════════════════════╝
 
-        // Per-group features
-        const groupId = isGroup ? chatId : null;
-        const antilinkOn = groupId ? Boolean(userGroupData.antilink && userGroupData.antilink[groupId]) : false;
-        const antibadwordOn = groupId ? Boolean(userGroupData.antibadword && userGroupData.antibadword[groupId]) : false;
-        const welcomeOn = groupId ? Boolean(userGroupData.welcome && userGroupData.welcome[groupId]) : false;
-        const goodbyeOn = groupId ? Boolean(userGroupData.goodbye && userGroupData.goodbye[groupId]) : false;
-        const chatbotOn = groupId ? Boolean(userGroupData.chatbot && userGroupData.chatbot[groupId]) : false;
-        const antitagCfg = groupId ? (userGroupData.antitag && userGroupData.antitag[groupId]) : null;
+┌──────────────────❖
+│ 🌐 *BOT MODE*
+├──────────────────❖
+│ 🔓 Mode        : *${isPublic ? '🌍 Public' : '🔒 Private'}*
+└──────────────────❖
 
-        const lines = [];
-        lines.push('*BOT SETTINGS*');
-        lines.push('');
-        lines.push(`• Mode: ${mode.isPublic ? 'Public' : 'Private'}`);
-        lines.push(`• Auto Status: ${autoStatus.enabled ? 'ON' : 'OFF'}`);
-        lines.push(`• Autoread: ${autoread.enabled ? 'ON' : 'OFF'}`);
-        lines.push(`• Autotyping: ${autotyping.enabled ? 'ON' : 'OFF'}`);
-        lines.push(`• PM Blocker: ${pmblocker.enabled ? 'ON' : 'OFF'}`);
-        lines.push(`• Anticall: ${anticall.enabled ? 'ON' : 'OFF'}`);
-        lines.push(`• Auto Reaction: ${autoReaction ? 'ON' : 'OFF'}`);
-        if (groupId) {
-            lines.push('');
-            lines.push(`Group: ${groupId}`);
-            if (antilinkOn) {
-                const al = userGroupData.antilink[groupId];
-                lines.push(`• Antilink: ON (action: ${al.action || 'delete'})`);
-            } else {
-                lines.push('• Antilink: OFF');
-            }
-            if (antibadwordOn) {
-                const ab = userGroupData.antibadword[groupId];
-                lines.push(`• Antibadword: ON (action: ${ab.action || 'delete'})`);
-            } else {
-                lines.push('• Antibadword: OFF');
-            }
-            lines.push(`• Welcome: ${welcomeOn ? 'ON' : 'OFF'}`);
-            lines.push(`• Goodbye: ${goodbyeOn ? 'ON' : 'OFF'}`);
-            lines.push(`• Chatbot: ${chatbotOn ? 'ON' : 'OFF'}`);
-            if (antitagCfg && antitagCfg.enabled) {
-                lines.push(`• Antitag: ON (action: ${antitagCfg.action || 'delete'})`);
-            } else {
-                lines.push('• Antitag: OFF');
-            }
-        } else {
-            lines.push('');
-            lines.push('Note: Per-group settings will be shown when used inside a group.');
-        }
+┌──────────────────❖
+│ 🤖 *AUTO FEATURES*
+├──────────────────❖
+│ ⌨️  AutoTyping  : *${status(autotyping.enabled)}*
+│ 👁️  AutoRead    : *${status(autoread.enabled)}*
+│ 🎙️  AutoRecord  : *${status(autorecord.enabled)}*
+│ 📊 AutoStatus  : *${status(autostatus.enabled)}*
+│ 🎭 AutoReact   : *${status(areact.enabled)}*
+│ 🛡️  Auto Bio    : *${status(bio.enabled)}*
+└──────────────────❖
 
-        await sock.sendMessage(chatId, { text: lines.join('\n') }, { quoted: message });
-    } catch (error) {
-        console.error('Error in settings command:', error);
-        await sock.sendMessage(chatId, { text: 'Failed to read settings.' }, { quoted: message });
+┌──────────────────❖
+│ 🛡️ *PROTECTION*
+├──────────────────❖
+│ 🗑️  AntiDelete  : *${status(antidelete.enabled)}*
+│ 🔗 AntiLink    : *${status(antilink.enabled)}*
+│ 🤐 AntiBadWord : *${status(antibadword.enabled)}*
+│ 🏷️  AntiTag     : *${status(antitag.enabled)}*
+│ 📵 AntiCall    : *${status(anticall.enabled)}*
+│ 🚫 PM Blocker  : *${status(pmblocker.enabled)}*
+└──────────────────❖
+
+┌──────────────────❖
+│ 💬 *GROUP FEATURES*
+├──────────────────❖
+│ 🤖 Chatbot     : *${status(chatbot.enabled)}*
+│ 👋 Welcome     : *${status(welcome.enabled)}*
+│ 👋 Goodbye     : *${status(goodbye.enabled)}*
+│ 📢 Mention     : *${status(mention.enabled)}*
+└──────────────────❖
+
+┌──────────────────❖
+│ 🔧 *TOGGLE COMMANDS*
+├──────────────────❖
+│ ➤ .autotyping on/off
+│ ➤ .autoread on/off
+│ ➤ .autorecord on/off
+│ ➤ .autostatus on/off
+│ ➤ .autoreact on/off
+│ ➤ .bio on/off
+│ ➤ .antidelete on/off
+│ ➤ .antilink on/off
+│ ➤ .antibadword on/off
+│ ➤ .antitag on/off
+│ ➤ .anticall on/off
+│ ➤ .pmblocker on/off
+│ ➤ .chatbot on/off
+│ ➤ .welcome on/off
+│ ➤ .goodbye on/off
+│ ➤ .mode public/private
+└──────────────────❖
+
+*Made By Kimani Samuel*
+📢 ${channelLink()}`;
+
+        await sock.sendMessage(chatId, {
+            text: msg,
+            contextInfo
+        }, { quoted: message });
+
+    } catch (err) {
+        console.error('settings error:', err);
+        await sock.sendMessage(chatId, {
+            text: '❌ Failed to load settings.',
+            contextInfo
+        }, { quoted: message });
     }
 }
 
 module.exports = settingsCommand;
-
-
