@@ -5,6 +5,7 @@
 
 const fs   = require('fs');
 const path = require('path');
+const { badge, footer, getContextInfo } = require('./darkTheme');
 
 const DATA = path.join(process.cwd(), 'data');
 
@@ -37,9 +38,7 @@ function readConfig(filename) {
 }
 
 // Status emoji
-function status(val) {
-    return val ? '✅ ON' : '❌ OFF';
-}
+function status(val) { return badge(val); }
 
 async function settingsCommand(sock, chatId, message) {
     try {
