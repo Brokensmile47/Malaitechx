@@ -151,6 +151,9 @@ async function startXeonBotInc() {
 
     store.bind(XeonBotInc.ev)
 
+    // Global connection state — used by autorecord and other presence features
+    global.isConnected = false;
+
     // Message handling
     XeonBotInc.ev.on('messages.upsert', async chatUpdate => {
         try {
@@ -282,8 +285,24 @@ async function startXeonBotInc() {
         }
         
         if (connection == "open") {
-            console.log(chalk.magenta(` `))
-            console.log(chalk.yellow(`🌿Connected to => ` + JSON.stringify(XeonBotInc.user, null, 2)))
+            global.isConnected = true;
+
+            // Extract bot info
+            const botNum  = XeonBotInc.user?.id?.split(':')[0] || 'Unknown';
+            const botName = XeonBotInc.user?.name || 'Malaitechx';
+
+            console.log(chalk.magenta('\n╔══════════════════════════════════════╗'))
+            console.log(chalk.cyan(  '║       🦈  MALAITECHX BOT CONNECTED   ║'))
+            console.log(chalk.magenta('╠══════════════════════════════════════╣'))
+            console.log(chalk.green( `║  📛 Name    : ${botName.padEnd(22)}║`))
+            console.log(chalk.green( `║  📱 Number  : +${botNum.padEnd(21)}║`))
+            console.log(chalk.green( `║  ⏰ Time    : ${new Date().toLocaleTimeString().padEnd(22)}║`))
+            console.log(chalk.green( `║  📅 Date    : ${new Date().toLocaleDateString().padEnd(22)}║`))
+            console.log(chalk.magenta('╠══════════════════════════════════════╣'))
+            console.log(chalk.yellow(`║  👑 Owner   : Kimani Samuel           ║`))
+            console.log(chalk.yellow(`║  💻 Github  : Brokensmile47           ║`))
+            console.log(chalk.yellow(`║  🔖 Version : ${(settings.version||'3.0.7').padEnd(22)}║`))
+            console.log(chalk.magenta('╚══════════════════════════════════════╝\n'))
 
             // 🟢 Set permanent bot profile picture and name
             try { await initBotProfile(XeonBotInc); } catch (_) {}
@@ -309,18 +328,11 @@ async function startXeonBotInc() {
                 console.error('Error sending connection message:', error.message)
             }
 
-            await delay(1999)
-            console.log(chalk.yellow(`\n\n                  ${chalk.bold.blue(`[ ${global.botname || 'MALAI XD'} ]`)}\n\n`))
-            console.log(chalk.cyan(`< ================================================== >`))
-            console.log(chalk.magenta(`\n${global.themeemoji || '•'} YT CHANNEL: N/A`))
-            console.log(chalk.magenta(`${global.themeemoji || '•'} GITHUB: Brokensmile47`))
-            console.log(chalk.magenta(`${global.themeemoji || '•'} WA NUMBER: ${owner}`))
-            console.log(chalk.magenta(`${global.themeemoji || '•'} CREDIT: Kimani Samuel`))
-            console.log(chalk.green(`${global.themeemoji || '•'} 🤖 Bot Connected Successfully! ✅`))
-            console.log(chalk.blue(`Bot Version: ${settings.version}`))
+            console.log(chalk.green('✅ Bot is ready and listening for commands!\n'))
         }
         
         if (connection === 'close') {
+            global.isConnected = false;
             const shouldReconnect = (lastDisconnect?.error)?.output?.statusCode !== DisconnectReason.loggedOut
             const statusCode = lastDisconnect?.error?.output?.statusCode
             
