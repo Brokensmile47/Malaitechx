@@ -17,6 +17,7 @@ async function helpCommand(sock, chatId, message) {
 🌐 *General Commands*:
 ║ ➤ .help or .menu
 ║ ➤ .ping
+║ ➤ .ping2
 ║ ➤ .alive
 ║ ➤ .tts <text>
 ║ ➤ .owner
@@ -31,6 +32,9 @@ async function helpCommand(sock, chatId, message) {
 ║ ➤ .groupinfo
 ║ ➤ .staff or .admins 
 ║ ➤ .vv
+║ ➤ .vv2
+║ ➤ .getpp (reply to msg)
+║ ➤ .getpp <number>
 ║ ➤ .trt <text> <lang>
 ║ ➤ .ss <link>
 ║ ➤ .jid
@@ -79,6 +83,8 @@ async function helpCommand(sock, chatId, message) {
 ║ ➤ .autostatus react <on/off>
 ║ ➤ .autotyping <on/off>
 ║ ➤ .autoread <on/off>
+║ ➤ .autorecord <on/off>
+║ ➤ .bio <on/off>
 ║ ➤ .anticall <on/off>
 ║ ➤ .pmblocker <on/off/status>
 ║ ➤ .pmblocker setmsg <text>
@@ -229,7 +235,6 @@ Join our channel for updates:`;
         
         if (fs.existsSync(imagePath)) {
             const imageBuffer = fs.readFileSync(imagePath);
-            
             await sock.sendMessage(chatId, {
                 image: imageBuffer,
                 caption: helpMessage,
@@ -242,9 +247,8 @@ Join our channel for updates:`;
                         serverMessageId: -1
                     }
                 }
-            },{ quoted: message });
+            }, { quoted: message });
         } else {
-            console.error('Bot image not found at:', imagePath);
             await sock.sendMessage(chatId, { 
                 text: helpMessage,
                 contextInfo: {
