@@ -125,12 +125,15 @@ function isAutorecordEnabled() {
  * Fake recording presence (20 seconds like autotyping style delay system)
  */
 async function handleAutorecord(sock, chatId) {
+    // Don't fire during reconnection — causes xml-not-well-formed stream crash
+    if (!global.isConnected) return false;
     if (isAutorecordEnabled()) {
         try {
             // Subscribe to presence
             await sock.presenceSubscribe(chatId);
 
-            // Start recording
+            // Check connection before each presence update
+            if (!global.isConnected) return false;
             await sock.sendPresenceUpdate('recording', chatId);
 
             // Human-like delay (20 seconds total)
