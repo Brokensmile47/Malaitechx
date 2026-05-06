@@ -4,23 +4,14 @@
  */
 
 const os   = require('os');
+const { footer, getContextInfo } = require('./darkTheme');
 const fs   = require('fs');
 const path = require('path');
 const { exec } = require('child_process');
 const util = require('util');
 const execPromise = util.promisify(exec);
 
-const channelInfo = {
-    contextInfo: {
-        forwardingScore: 1,
-        isForwarded: true,
-        forwardedNewsletterMessageInfo: {
-            newsletterJid: '0029Vb7yILLBadmWeKQso40p@newsletter',
-            newsletterName: '✨ Made By Kɪᴍᴀɴɪ Samuel 💎',
-            serverMessageId: -1
-        }
-    }
-};
+const channelInfo = { contextInfo: getContextInfo(true) };
 
 function formatUptime(sec) {
     const d = Math.floor(sec / 86400);
@@ -128,8 +119,9 @@ async function ping2Command(sock, chatId, message) {
         txt += `*🤖 BOT INFO*\n`;
         txt += `├ 📛 Name        : *Malai XD 🦈*\n`;
         txt += `├ 🏷️  Version     : *v3.0.7*\n`;
-        txt += `├ 👑 Owner       : *Kɪᴍᴀɴɪ Samuel*\n`;
+        txt += `├ 👑 Owner       : *Kimani Samuel*\n`;
         txt += `└ 🟢 Status      : *Online & Active*`;
+        txt += footer();
 
         await sock.sendMessage(chatId, { text: txt, ...channelInfo }, { quoted: message });
 
