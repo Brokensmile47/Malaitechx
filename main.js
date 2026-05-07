@@ -34,7 +34,7 @@ const darkThemeHeader = (pushname, senderNumber) => {
     const date = now.toLocaleDateString('en-GB').replace(/\//g, '/');
     const time = now.toLocaleTimeString('en-GB', { hour12: false });
     const hour = now.getHours();
-    const greeting = hour < 12 ? 'Good Morning 🌄' : hour < 17 ? 'Good Afternoon ☀️' : 'Good Evening 🚀';
+    const greeting = hour < 12 ? 'Good Morning 🌄' : hour < 17 ? 'Good Afternoon ☀️' : 'Good Evening 🤠';
     const userCount = typeof global.getUserCount === 'function' ? global.getUserCount() : '0';
     return `❖
 │ *MALAITECHX*
@@ -226,14 +226,21 @@ async function handleMessages(sock, messageUpdate, printLog) {
         const senderId = message.key.participant || message.key.remoteJid;
 
         // 🌑 MALAITECHX DARK THEME PATCH — intercepts ALL sock.sendMessage calls
+        // Header only on .menu/.help — all other commands just get the newsletter footer
+        const _menuCommands = ['.menu', '.help', '.bot', '.list'];
+        const _isMenuCommand = _menuCommands.some(cmd => userMessage === cmd);
+
         if (!sock._darkPatched) {
             const _orig = sock.sendMessage.bind(sock);
             sock.sendMessage = async (jid, content, options) => {
                 if (content && typeof content.text === 'string' && content.text.length > 0) {
-                    const senderNumber = senderId ? senderId.split('@')[0] : '000';
-                    const pushname = message?.pushName || 'User';
-                    content.text = `${darkThemeHeader(pushname, senderNumber)}\n\n${content.text}`;
-                    // 📢 Makes WhatsApp show channel name at TOP and "View channel" button at BOTTOM
+                    // Only prepend the dark header on menu/help commands
+                    if (_isMenuCommand) {
+                        const senderNumber = senderId ? senderId.split('@')[0] : '000';
+                        const pushname = message?.pushName || 'User';
+                        content.text = `${darkThemeHeader(pushname, senderNumber)}\n\n${content.text}`;
+                    }
+                    // ALL commands get the "View channel" button at the bottom
                     content.contextInfo = {
                         ...(content.contextInfo || {}),
                         forwardingScore: 999,
