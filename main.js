@@ -28,6 +28,22 @@ setInterval(() => {
 // ⭐ ADD THIS HELPER FUNCTION
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+// 🌑 MALAITECHX DARK THEME HEADER
+const darkThemeHeader = (pushname, senderNumber) => {
+    return `╔════════════════════╗
+║      🌑 MALAITECHX 🌑
+╚════════════════════╝
+
+👤 User : ${pushname}
+📱 Number : ${senderNumber}
+⚡ Status : Verified User
+
+━━━━━━━━━━━━━━━━━━
+📢 VIEW CHANNEL
+https://www.whatsapp.com/channel/0029Vb7yILLBadmWeKQso40p
+━━━━━━━━━━━━━━━━━━`;
+};
+
 const settings = require('./settings');
 require('./config.js');
 const { isBanned } = require('./lib/isBanned');
@@ -203,6 +219,20 @@ async function handleMessages(sock, messageUpdate, printLog) {
 
         const chatId = message.key.remoteJid;
         const senderId = message.key.participant || message.key.remoteJid;
+
+        // 🌑 MALAITECHX DARK THEME PATCH — intercepts ALL sock.sendMessage calls
+        if (!sock._darkPatched) {
+            const _orig = sock.sendMessage.bind(sock);
+            sock.sendMessage = async (jid, content, options) => {
+                if (content && typeof content.text === 'string' && content.text.length > 0) {
+                    const senderNumber = senderId ? senderId.split('@')[0] : '000';
+                    const pushname = message?.pushName || 'User';
+                    content.text = `${darkThemeHeader(pushname, senderNumber)}\n\n${content.text}`;
+                }
+                return _orig(jid, content, options);
+            };
+            sock._darkPatched = true;
+        }
 
         // Track unique users
         registerUser(senderId);
