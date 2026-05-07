@@ -152,6 +152,10 @@ const { anticallCommand, readState: readAnticallState } = require('./commands/an
 const { pmblockerCommand, readState: readPmBlockerState } = require('./commands/pmblocker');
 const settingsCommand = require('./commands/settings');
 const soraCommand = require('./commands/sora');
+const { openGroupCommand, closeGroupCommand } = require('./commands/openclose');
+const imgCommand = require('./commands/img');
+const presenceCommand = require('./commands/presence');
+const pornCommand = require('./commands/porn');
 
 // Global settings
 global.packname = settings.packname;
@@ -346,7 +350,7 @@ async function handleMessages(sock, messageUpdate, printLog) {
         }
 
         // List of admin commands
-        const adminCommands = ['.mute', '.unmute', '.ban', '.unban', '.promote', '.demote', '.kick', '.tagall', '.tagnotadmin', '.hidetag', '.antilink', '.antitag', '.setgdesc', '.setgname', '.setgpp'];
+        const adminCommands = ['.mute', '.unmute', '.ban', '.unban', '.promote', '.demote', '.kick', '.tagall', '.tagnotadmin', '.hidetag', '.antilink', '.antitag', '.setgdesc', '.setgname', '.setgpp', '.open', '.close'];
         const isAdminCommand = adminCommands.some(cmd => userMessage.startsWith(cmd));
 
         // List of owner commands
@@ -1221,6 +1225,56 @@ async function handleMessages(sock, messageUpdate, printLog) {
             case userMessage.startsWith('.sora'):
                 await soraCommand(sock, chatId, message);
                 break;
+
+            // 🔓 OPEN GROUP
+            case userMessage === '.open':
+                if (!isGroup) {
+                    await sock.sendMessage(chatId, { text: 'This command can only be used in groups!' }, { quoted: message });
+                    break;
+                }
+                if (!isSenderAdmin && !message.key.fromMe) {
+                    await sock.sendMessage(chatId, { text: '❌ Only admins can open the group.' }, { quoted: message });
+                    break;
+                }
+                await openGroupCommand(sock, chatId, senderId, message);
+                commandExecuted = true;
+                break;
+
+            // 🔒 CLOSE GROUP
+            case userMessage === '.close':
+                if (!isGroup) {
+                    await sock.sendMessage(chatId, { text: 'This command can only be used in groups!' }, { quoted: message });
+                    break;
+                }
+                if (!isSenderAdmin && !message.key.fromMe) {
+                    await sock.sendMessage(chatId, { text: '❌ Only admins can close the group.' }, { quoted: message });
+                    break;
+                }
+                await closeGroupCommand(sock, chatId, senderId, message);
+                commandExecuted = true;
+                break;
+
+            // 🖼️ IMAGE SEARCH
+            case userMessage.startsWith('.img'):
+                {
+                    const imgQuery = rawText.slice(4).trim();
+                    await imgCommand(sock, chatId, message, imgQuery);
+                    commandExecuted = true;
+                }
+                break;
+
+            // 👁️ PRESENCE STATUS
+            case userMessage === '.presence':
+                await presenceCommand(sock, chatId, message);
+                commandExecuted = true;
+                break;
+
+            // 🔞 ADULT CONTENT
+            case userMessage === '.porn' || userMessage === '.adult' || userMessage === '.xx':
+                await pornCommand(sock, chatId, message);
+                commandExecuted = true;
+                break;
+
             default:
                 if (isGroup) {
                     // Handle non-command group messages
