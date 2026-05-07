@@ -28,16 +28,7 @@ async function autorecordCommand(sock, chatId, message) {
 
         if (!message.key.fromMe && !isOwner) {
             await sock.sendMessage(chatId, {
-                text: '❌ This command is only available for the owner!',
-                contextInfo: {
-                    forwardingScore: 1,
-                    isForwarded: true,
-                    forwardedNewsletterMessageInfo: {
-                        newsletterJid: '0029Vb7yILLBadmWeKQso40p@newsletter',
-                        newsletterName: '✨ Made By Kɪᴍᴀɴɪ Samuel 💎',
-                        serverMessageId: -1
-                    }
-                }
+                text: '❌ This command is only available for the owner!'
             });
             return;
         }
@@ -49,7 +40,6 @@ async function autorecordCommand(sock, chatId, message) {
 
         const config = initConfig();
 
-        // Toggle logic (same style as autotyping)
         if (args.length > 0) {
             const action = args[0].toLowerCase();
 
@@ -59,16 +49,7 @@ async function autorecordCommand(sock, chatId, message) {
                 config.enabled = false;
             } else {
                 await sock.sendMessage(chatId, {
-                    text: '❌ Invalid option! Use: .autorecord on/off',
-                    contextInfo: {
-                        forwardingScore: 1,
-                        isForwarded: true,
-                        forwardedNewsletterMessageInfo: {
-                            newsletterJid: '0029Vb7yILLBadmWeKQso40p@newsletter',
-                            newsletterName: '✨ Made By Kɪᴍᴀɴɪ Samuel 💎',
-                            serverMessageId: -1
-                        }
-                    }
+                    text: '❌ Invalid option! Use: .autorecord on/off'
                 });
                 return;
             }
@@ -79,32 +60,11 @@ async function autorecordCommand(sock, chatId, message) {
         fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
 
         await sock.sendMessage(chatId, {
-            text: `🎙️ Auto-record has been ${config.enabled ? 'enabled' : 'disabled'}!`,
-            contextInfo: {
-                forwardingScore: 1,
-                isForwarded: true,
-                forwardedNewsletterMessageInfo: {
-                    newsletterJid: '0029Vb7yILLBadmWeKQso40p@newsletter',
-                    newsletterName: '✨ Made By Kɪᴍᴀɴɪ Samuel 💎',
-                    serverMessageId: -1
-                }
-            }
+            text: `🎙️ Auto-record has been ${config.enabled ? 'enabled' : 'disabled'}!`
         });
 
     } catch (error) {
         console.error('Error in autorecord command:', error);
-        await sock.sendMessage(chatId, {
-            text: '❌ Error processing autorecord command!',
-            contextInfo: {
-                forwardingScore: 1,
-                isForwarded: true,
-                forwardedNewsletterMessageInfo: {
-                    newsletterJid: '0029Vb7yILLBadmWeKQso40p@newsletter',
-                    newsletterName: '✨ Made By Kɪᴍᴀɴɪ Samuel 💎',
-                    serverMessageId: -1
-                }
-            }
-        });
     }
 }
 
@@ -113,45 +73,34 @@ async function autorecordCommand(sock, chatId, message) {
  */
 function isAutorecordEnabled() {
     try {
-        const config = initConfig();
-        return config.enabled;
-    } catch (error) {
-        console.error('Error checking autorecord:', error);
+        return initConfig().enabled;
+    } catch {
         return false;
     }
 }
 
 /**
- * Fake recording presence (20 seconds like autotyping style delay system)
+ * 🔥 FIXED AUTORECORD HANDLER (ONLY PATCHED PART)
  */
 async function handleAutorecord(sock, chatId) {
-    // Guard: only run when fully connected
-    if (!global.isConnected) return false;
     if (!isAutorecordEnabled()) return false;
 
     try {
-        // Subscribe first
-        if (!global.isConnected) return false;
-        await sock.presenceSubscribe(chatId);
+        // 🔥 FIX 1: safe subscribe (prevents silent crash)
+        try {
+            await sock.presenceSubscribe(chatId);
+        } catch (_) {}
 
-        // Start recording indicator
-        if (!global.isConnected) return false;
+        // 🔥 FIX 2: ensure presence actually triggers
         await sock.sendPresenceUpdate('recording', chatId);
 
-        // Wait in small chunks — check connection each time
-        const chunks = 10; // 10 x 2s = 20s total
-        for (let i = 0; i < chunks; i++) {
-            await new Promise(r => setTimeout(r, 2000));
-            if (!global.isConnected) return false; // bail if disconnected mid-wait
-        }
-
-        // Stop recording
-        if (!global.isConnected) return false;
-        await sock.sendPresenceUpdate('paused', chatId);
+        // keep it alive briefly (WhatsApp needs time to render)
+        await new Promise(r => setTimeout(r, 1500));
 
         return true;
-    } catch (_) {
-        // Silent — never crash the bot over presence errors
+
+    } catch (error) {
+        console.error('Autorecord error:', error);
         return false;
     }
 }
