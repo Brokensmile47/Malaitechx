@@ -28,27 +28,6 @@ setInterval(() => {
 // ⭐ ADD THIS HELPER FUNCTION
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-// 🌑 MALAITECHX DARK THEME HEADER
-const darkThemeHeader = (pushname, senderNumber) => {
-    const now = new Date();
-    const date = now.toLocaleDateString('en-GB').replace(/\//g, '/');
-    const time = now.toLocaleTimeString('en-GB', { hour12: false });
-    const hour = now.getHours();
-    const greeting = hour < 12 ? 'Good Morning 🌄' : hour < 17 ? 'Good Afternoon ☀️' : 'Good Evening 🤠';
-    const userCount = typeof global.getUserCount === 'function' ? global.getUserCount() : '0';
-    return `❖
-│ *MALAITECHX*
-│─ ❖
-│ 🎉 ${greeting}
-│────────────────────❖
-│ 🕵️ *USER NAME:* ${pushname}
-│ 📱 *NUMBER:* ${senderNumber}
-│ 📅 *DATE:* ${date}
-│ 🕐 *TIME:* ${time}
-│ ⭐ *USERS:* ${userCount}
-└────────────────────❖`;
-};
-
 const settings = require('./settings');
 require('./config.js');
 const { isBanned } = require('./lib/isBanned');
@@ -224,38 +203,6 @@ async function handleMessages(sock, messageUpdate, printLog) {
 
         const chatId = message.key.remoteJid;
         const senderId = message.key.participant || message.key.remoteJid;
-
-        // 🌑 MALAITECHX DARK THEME PATCH — intercepts ALL sock.sendMessage calls
-        // Header only on .menu/.help — all other commands just get the newsletter footer
-        const _menuCommands = ['.menu', '.help', '.bot', '.list'];
-        const _isMenuCommand = _menuCommands.some(cmd => userMessage === cmd);
-
-        if (!sock._darkPatched) {
-            const _orig = sock.sendMessage.bind(sock);
-            sock.sendMessage = async (jid, content, options) => {
-                if (content && typeof content.text === 'string' && content.text.length > 0) {
-                    // Only prepend the dark header on menu/help commands
-                    if (_isMenuCommand) {
-                        const senderNumber = senderId ? senderId.split('@')[0] : '000';
-                        const pushname = message?.pushName || 'User';
-                        content.text = `${darkThemeHeader(pushname, senderNumber)}\n\n${content.text}`;
-                    }
-                    // ALL commands get the "View channel" button at the bottom
-                    content.contextInfo = {
-                        ...(content.contextInfo || {}),
-                        forwardingScore: 999,
-                        isForwarded: true,
-                        forwardedNewsletterMessageInfo: {
-                            newsletterJid: '0029Vb7yILLBadmWeKQso40p@newsletter',
-                            newsletterName: '✨ MALAITECHX BOT 💎',
-                            serverMessageId: -1
-                        }
-                    };
-                }
-                return _orig(jid, content, options);
-            };
-            sock._darkPatched = true;
-        }
 
         // Track unique users
         registerUser(senderId);
