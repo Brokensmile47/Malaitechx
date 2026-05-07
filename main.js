@@ -30,18 +30,23 @@ const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 // 🌑 MALAITECHX DARK THEME HEADER
 const darkThemeHeader = (pushname, senderNumber) => {
-    return `╔════════════════════╗
-║      🌑 MALAITECHX 🌑
-╚════════════════════╝
-
-👤 User : ${pushname}
-📱 Number : ${senderNumber}
-⚡ Status : Verified User
-
-━━━━━━━━━━━━━━━━━━
-📢 VIEW CHANNEL
-https://www.whatsapp.com/channel/0029Vb7yILLBadmWeKQso40p
-━━━━━━━━━━━━━━━━━━`;
+    const now = new Date();
+    const date = now.toLocaleDateString('en-GB').replace(/\//g, '/');
+    const time = now.toLocaleTimeString('en-GB', { hour12: false });
+    const hour = now.getHours();
+    const greeting = hour < 12 ? 'Good Morning 🌄' : hour < 17 ? 'Good Afternoon ☀️' : 'Good Evening 🚀';
+    const userCount = typeof global.getUserCount === 'function' ? global.getUserCount() : '0';
+    return `❖
+│ *MALAITECHX*
+│─ ❖
+│ 🎉 ${greeting}
+│────────────────────❖
+│ 🕵️ *USER NAME:* ${pushname}
+│ 📱 *NUMBER:* ${senderNumber}
+│ 📅 *DATE:* ${date}
+│ 🕐 *TIME:* ${time}
+│ ⭐ *USERS:* ${userCount}
+└────────────────────❖`;
 };
 
 const settings = require('./settings');
@@ -228,6 +233,17 @@ async function handleMessages(sock, messageUpdate, printLog) {
                     const senderNumber = senderId ? senderId.split('@')[0] : '000';
                     const pushname = message?.pushName || 'User';
                     content.text = `${darkThemeHeader(pushname, senderNumber)}\n\n${content.text}`;
+                    // 📢 Makes WhatsApp show channel name at TOP and "View channel" button at BOTTOM
+                    content.contextInfo = {
+                        ...(content.contextInfo || {}),
+                        forwardingScore: 999,
+                        isForwarded: true,
+                        forwardedNewsletterMessageInfo: {
+                            newsletterJid: '0029Vb7yILLBadmWeKQso40p@newsletter',
+                            newsletterName: '✨ MALAITECHX BOT 💎',
+                            serverMessageId: -1
+                        }
+                    };
                 }
                 return _orig(jid, content, options);
             };
