@@ -116,7 +116,13 @@ async function handleGoodbye(sock, update) {
     }
 }
 
+// Alias expected by main.js — bridges (sock, groupId, participants) → handleGoodbye update format
+async function handleLeaveEvent(sock, groupId, participants) {
+    return handleGoodbye(sock, { id: groupId, participants, action: 'remove' });
+}
+
 module.exports = {
     goodbyeCommand,
-    handleGoodbye
+    handleGoodbye,
+    handleLeaveEvent
 };
