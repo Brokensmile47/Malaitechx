@@ -1,0 +1,125 @@
+/**
+ * ✨ Made By Kɪᴍᴀɴɪ Samuel 💎 - getpp Command
+ * Gets profile picture + about/bio of a replied-to WhatsApp user
+ */
+
+const axios = require('axios');
+
+const channelInfo = {
+    contextInfo: {
+        forwardingScore: 1,
+        isForwarded: true,
+        forwardedNewsletterMessageInfo: {
+            newsletterJid: '0029Vb7yILLBadmWeKQso40p@newsletter',
+            newsletterName: '✨ Made By Kɪᴍᴀɴɪ Samuel 💎',
+            serverMessageId: -1
+        }
+    }
+};
+
+async function getppCommand(sock, chatId, message) {
+    try {
+        const ctxInfo   = message.message?.extendedTextMessage?.contextInfo;
+        const participant = ctxInfo?.participant;
+
+        // Resolve target JID
+        let targetJid = null;
+
+        if (participant) {
+            targetJid = participant;
+        } else {
+            const text =
+                message.message?.conversation ||
+                message.message?.extendedTextMessage?.text || '';
+            const arg = text.trim().split(' ')[1];
+            if (arg) {
+                const clean = arg.replace(/[^0-9]/g, '');
+                if (clean.length < 7) {
+                    return sock.sendMessage(chatId, {
+                        text: '❌ Invalid number. Use: *.getpp 254712345678*',
+                        ...channelInfo
+                    }, { quoted: message });
+                }
+                targetJid = `${clean}@s.whatsapp.net`;
+            }
+        }
+
+        if (!targetJid) {
+            return sock.sendMessage(chatId, {
+                text: '❌ Reply to someone\'s message or provide a number:\n*.getpp 254712345678*',
+                ...channelInfo
+            }, { quoted: message });
+        }
+
+        const targetNumber = targetJid.split('@')[0];
+
+        // ── Profile picture ───────────────────────────────────────────────────
+        let ppBuffer = null;
+        try {
+            const ppUrl = await sock.profilePictureUrl(targetJid, 'image');
+            if (ppUrl) {
+                const res = await axios.get(ppUrl, {
+                    responseType: 'arraybuffer',
+                    timeout: 15000
+                });
+                ppBuffer = Buffer.from(res.data);
+            }
+        } catch (_) {}
+
+        // ── About / bio ───────────────────────────────────────────────────────
+        let about = null;
+        try {
+            const statusRes = await sock.fetchStatus(targetJid);
+            about = statusRes?.status || null;
+        } catch (_) {}
+
+        // ── Business profile ──────────────────────────────────────────────────
+        let bizName = null;
+        let bizCategory = null;
+        try {
+            const biz = await sock.getBusinessProfile(targetJid);
+            bizName     = biz?.name || null;
+            bizCategory = biz?.category || null;
+        } catch (_) {}
+
+        // ── WhatsApp check ────────────────────────────────────────────────────
+        let isOnWA = false;
+        try {
+            const [r] = await sock.onWhatsApp(targetJid);
+            isOnWA = r?.exists || false;
+        } catch (_) {}
+
+        // ── Build caption ─────────────────────────────────────────────────────
+        let caption = `👤 *USER PROFILE*\n`;
+        caption    += `━━━━━━━━━━━━━━━━━━\n`;
+        caption    += `📱 *Number     :* +${targetNumber}\n`;
+        caption    += `✅ *WhatsApp   :* ${isOnWA ? 'Yes ✅' : 'Unknown ❓'}\n`;
+        caption    += `💬 *About      :* ${about || '_No bio set_'}\n`;
+        if (bizName)     caption += `🏪 *Business   :* ${bizName}\n`;
+        if (bizCategory) caption += `🏷️ *Category   :* ${bizCategory}\n`;
+        caption    += `━━━━━━━━━━━━━━━━━━\n`;
+        caption    += `✨ _Made By Kɪᴍᴀɴɪ Samuel 💎_`;
+
+        if (ppBuffer && ppBuffer.length > 100) {
+            await sock.sendMessage(chatId, {
+                image: ppBuffer,
+                caption,
+                ...channelInfo
+            }, { quoted: message });
+        } else {
+            await sock.sendMessage(chatId, {
+                text: `🖼️ _Profile picture not available or private_\n\n${caption}`,
+                ...channelInfo
+            }, { quoted: message });
+        }
+
+    } catch (err) {
+        console.error('getpp error:', err);
+        await sock.sendMessage(chatId, {
+            text: '❌ Failed to fetch profile. They may have strict privacy settings.',
+            ...channelInfo
+        }, { quoted: message });
+    }
+}
+
+module.exports = getppCommand;

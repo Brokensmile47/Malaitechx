@@ -1,0 +1,19 @@
+╔════════════════════╗
+║     🌑 MALAITECHX 🌑     ║
+╚════════════════════╝
+
+▢ Dark Theme Enabled
+▢ Powered By Malaitechx
+▢ Fast & Stable WhatsApp Bot
+
+┏━━━━━━━━━━━━━━━━━┓
+┃ 👤 USER INFO
+┣━━━━━━━━━━━━━━━━━┫
+┃ Name : {pushname}
+┃ Number : {number}
+┗━━━━━━━━━━━━━━━━━┛
+
+╔════════════════════╗
+║ 📢 VIEW CHANNEL
+╚════════════════════╝
+https://www.whatsapp.com/channel/0029Vb7yILLBadmWeKQso40p
