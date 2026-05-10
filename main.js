@@ -1790,26 +1790,32 @@ async function handleMessages(sock, messageUpdate, printLog) {
             });
         }
 
-        if (userMessage.startsWith('.')) {
-            if (commandExecuted !== false) {
-                await addCommandReaction(sock, message);
-            } else {
-                try { await sock.sendMessage(chatId, { react: { text: '❌', key: message.key } }); } catch (_) {}
-            }
-        }
-    } catch (error) {
-        console.error('❌ Error in message handler:', error.message);
-        try { if (typeof reactError === 'function') reactError(sock, message).catch(() => {}); } catch (_) {}
-        // Only try to send error message if we have a valid chatId
-        if (chatId) {
+   const chatId = message.key?.remoteJid;
+
+if (userMessage?.startsWith('.')) {
+    if (commandExecuted !== false) {
+        await addCommandReaction(sock, message);
+    } else {
+        try {
             await sock.sendMessage(chatId, {
-                text: '❌ Failed to process command!',
-                ...channelInfo
+                react: { text: '❌', key: message.key }
             });
-        }
+        } catch (_) {}
+    }
+}catch (error) {
+    console.error('❌ Error in message handler:', error.message);
+
+    try {
+        if (typeof reactError === 'function') reactError(sock, message).catch(() => {});
+    } catch (_) {}
+
+    if (chatId) {
+        await sock.sendMessage(chatId, {
+            text: '❌ Failed to process command!',
+            ...channelInfo
+        });
     }
 }
-
 async function handleGroupParticipantUpdate(sock, update) {
     try {
         const { id, participants, action, author } = update;
