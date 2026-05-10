@@ -1802,7 +1802,8 @@ if (userMessage?.startsWith('.')) {
             });
         } catch (_) {}
     }
-}catch (error) {
+}
+        catch (error) {
     console.error('❌ Error in message handler:', error.message);
 
     try {
