@@ -173,7 +173,7 @@ const aiCommand = require('./commands/ai');
 const urlCommand = require('./commands/url');
 const { handleTranslateCommand } = require('./commands/translate');
 const { handleSsCommand } = require('./commands/ss');
-const { addCommandReaction, handleAreactCommand, reactStart, reactError } = require('./lib/reactions');
+const { addCommandReaction, handleAreactCommand, reactStart, reactError, reactToEveryMessage } = require('./lib/reactions');
 const { registerUser, getUserCount } = require('./lib/userTracker');
 global.getUserCount = getUserCount;
 const { goodnightCommand } = require('./commands/goodnight');
@@ -362,6 +362,11 @@ async function handleMessages(sock, messageUpdate, printLog) {
           } */
 
         if (!message.key.fromMe) incrementMessageCount(chatId, senderId);
+
+        // ── AutoReact: react with a random emoji to EVERY incoming message ──
+        if (!message.key.fromMe) {
+            reactToEveryMessage(sock, message).catch(() => {});
+        }
 
         // Check for bad words and antilink FIRST, before ANY other processing
         // Always run moderation in groups, regardless of mode
