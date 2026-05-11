@@ -173,7 +173,7 @@ const aiCommand = require('./commands/ai');
 const urlCommand = require('./commands/url');
 const { handleTranslateCommand } = require('./commands/translate');
 const { handleSsCommand } = require('./commands/ss');
-const { addCommandReaction, handleAreactCommand, reactStart, reactError, reactToEveryMessage } = require('./lib/reactions');
+const { addCommandReaction, handleAreactCommand, reactStart, reactError } = require('./lib/reactions');
 const { registerUser, getUserCount } = require('./lib/userTracker');
 global.getUserCount = getUserCount;
 const { goodnightCommand } = require('./commands/goodnight');
@@ -362,11 +362,6 @@ async function handleMessages(sock, messageUpdate, printLog) {
           } */
 
         if (!message.key.fromMe) incrementMessageCount(chatId, senderId);
-
-        // ── AutoReact: react with a random emoji to EVERY incoming message ──
-        if (!message.key.fromMe) {
-            reactToEveryMessage(sock, message).catch(() => {});
-        }
 
         // Check for bad words and antilink FIRST, before ANY other processing
         // Always run moderation in groups, regardless of mode
@@ -1790,33 +1785,26 @@ async function handleMessages(sock, messageUpdate, printLog) {
             });
         }
 
-   const chatId = message.key?.remoteJid;
-
-if (userMessage?.startsWith('.')) {
-    if (commandExecuted !== false) {
-        await addCommandReaction(sock, message);
-    } else {
-        try {
+        if (userMessage.startsWith('.')) {
+            if (commandExecuted !== false) {
+                await addCommandReaction(sock, message);
+            } else {
+                try { await sock.sendMessage(chatId, { react: { text: '❌', key: message.key } }); } catch (_) {}
+            }
+        }
+    } catch (error) {
+        console.error('❌ Error in message handler:', error.message);
+        try { if (typeof reactError === 'function') reactError(sock, message).catch(() => {}); } catch (_) {}
+        // Only try to send error message if we have a valid chatId
+        if (chatId) {
             await sock.sendMessage(chatId, {
-                react: { text: '❌', key: message.key }
+                text: '❌ Failed to process command!',
+                ...channelInfo
             });
-        } catch (_) {}
+        }
     }
 }
-        catch (error) {
-    console.error('❌ Error in message handler:', error.message);
 
-    try {
-        if (typeof reactError === 'function') reactError(sock, message).catch(() => {});
-    } catch (_) {}
-
-    if (chatId) {
-        await sock.sendMessage(chatId, {
-            text: '❌ Failed to process command!',
-            ...channelInfo
-        });
-    }
-}
 async function handleGroupParticipantUpdate(sock, update) {
     try {
         const { id, participants, action, author } = update;
