@@ -1085,21 +1085,9 @@ async function handleMessages(sock, messageUpdate, printLog) {
     userMessage.startsWith('.ytmp3') ||
     userMessage.startsWith('.song')
 ): {
-
-    const text =
-        message.message?.conversation ||
-        message.message?.extendedTextMessage?.text ||
-        ""
-
-    const parts = text.trim().split(/\s+/)
-
-    const args = parts.slice(1) // remove command
-
-    await songCommand(sock, chatId, message, args)
-
-    break
+    await playCommand(sock, chatId, message);
+    break;
 }
-                break;
             case userMessage.startsWith('.video') || userMessage.startsWith('.ytmp4'):
                 await videoCommand(sock, chatId, message);
                 break;
